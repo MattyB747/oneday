@@ -6,6 +6,21 @@ import { ic } from '../core/icons.js';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+let seen = [[], [], [], []]; // ids shown per slot (for swap exclusion)
+let odBase = {};             // { tripId, lat, lon }
+
+function planCardHtml(p) {
+  return `<div class="planCard" data-slot="${p.slotIndex}" ${p.image ? `style="background-image:url('${esc(p.image)}')"` : ''}>
+    <span class="time">${esc(p.time)}</span>
+    <button class="swapBtn" type="button" title="Did this already? Swap it">${ic('swap')}<span>Swap</span></button>
+    <div class="body">
+      <h3>${esc(p.name)}</h3>
+      <p>${esc(p.tip)}</p>
+      <div class="foot"><span class="m">★ ${esc(p.match)} Match</span><span class="d">${p.driveMin != null ? esc(p.driveMin) + ' min drive' : ''} ${ic('car')}</span></div>
+    </div>
+  </div>`;
+}
+
 const WHY_ITEMS = [
   { icon: 'event', t: 'Best times based on real conditions, not guesswork' },
   { icon: 'trending', t: 'Live signals refresh through the day' },
@@ -25,15 +40,11 @@ function render(d) {
   $('condList').innerHTML = (d.live || []).map((l) => `
     <div class="condRow">${ic(l.icon)}<span class="lbl">${esc(l.label)}</span><span class="val ${esc(l.tone)}">${esc(l.value)}</span></div>`).join('');
 
-  $('planRow').innerHTML = (d.plan || []).map((p) => `
-    <div class="planCard" ${p.image ? `style="background-image:url('${esc(p.image)}')"` : ''}>
-      <span class="time">${esc(p.time)}</span>
-      <div class="body">
-        <h3>${esc(p.name)}</h3>
-        <p>${esc(p.tip)}</p>
-        <div class="foot"><span class="m">★ ${esc(p.match)} Match</span><span class="d">${p.driveMin != null ? esc(p.driveMin) + ' min drive' : ''} ${ic('car')}</span></div>
-      </div>
-    </div>`).join('');
+  // Track every attraction id shown per slot, so a swap excludes them ("not that,
+  // and not the ones I've already seen").
+  seen = [[], [], [], []];
+  $('planRow').innerHTML = (d.plan || []).map(planCardHtml).join('');
+  (d.plan || []).forEach((p) => { if (p.slotIndex != null) seen[p.slotIndex].push(p.id); });
 
   $('whyRow').innerHTML = WHY_ITEMS.map((x) => `<div class="whyItem">${ic(x.icon)}<span class="t">${esc(x.t)}</span></div>`).join('');
 
@@ -51,6 +62,7 @@ function animateScore(target) {
 export async function loadToday(tripId, stay) {
   if (!stay) { try { stay = JSON.parse(sessionStorage.getItem('odStay') || 'null'); } catch (_) {} }
   if (stay && $('stayCity')) $('stayCity').textContent = (stay.label || 'Cape Town').split(',')[0];
+  odBase = { tripId, lat: stay && stay.lat, lon: stay && stay.lon };
   const q = new URLSearchParams();
   if (tripId) q.set('tripId', tripId);
   if (stay && Number.isFinite(stay.lat)) { q.set('lat', stay.lat); q.set('lon', stay.lon); }
@@ -62,6 +74,24 @@ export async function loadToday(tripId, stay) {
   }
 }
 
+async function doSwap(card) {
+  const slot = Number(card.dataset.slot);
+  const btn = card.querySelector('.swapBtn');
+  if (btn) { btn.classList.add('busy'); btn.querySelector('span').textContent = '…'; }
+  try {
+    const stop = await api('/api/swap', { method: 'POST', body: { ...odBase, slotIndex: slot, exclude: seen[slot] } });
+    seen[slot].push(stop.id);
+    const fresh = document.createElement('div');
+    fresh.innerHTML = planCardHtml({ ...stop, slotIndex: slot });
+    card.replaceWith(fresh.firstElementChild);
+  } catch (err) {
+    if (btn) { btn.classList.remove('busy'); btn.querySelector('span').textContent = 'Swap'; }
+    const t = $('toast'); if (t) { t.textContent = err.message || 'No more options'; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2400); }
+  }
+}
+
 export function mountToday() {
   $('viewPlan')?.addEventListener('click', () => { document.querySelector('.planWrap')?.scrollIntoView({ behavior: 'smooth' }); });
+  // Swap a stop for the next-best alternative (excludes everything already shown).
+  $('planRow')?.addEventListener('click', (e) => { const b = e.target.closest('.swapBtn'); if (b) doSwap(b.closest('.planCard')); });
 }

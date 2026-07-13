@@ -83,6 +83,10 @@ button{font-family:inherit;cursor:pointer}
 .planCard{position:relative;border-radius:16px;overflow:hidden;min-height:230px;background:#123 center/cover no-repeat;color:#fff;display:flex;flex-direction:column;justify-content:flex-end}
 .planCard::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.78))}
 .planCard .time{position:absolute;top:12px;left:12px;z-index:2;background:#fff;color:var(--ink);font-weight:800;font-size:13px;padding:5px 11px;border-radius:999px}
+.planCard .swapBtn{position:absolute;top:11px;right:11px;z-index:3;display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.92);color:var(--ink);border:0;border-radius:999px;padding:6px 11px;font-weight:800;font-size:12px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.planCard .swapBtn .ic{width:14px;height:14px}
+.planCard .swapBtn:hover{background:#fff}
+.planCard .swapBtn.busy{opacity:.6;pointer-events:none}
 .planCard .body{position:relative;z-index:2;padding:14px}
 .planCard .body h3{margin:0 0 4px;font-size:19px;font-weight:800}
 .planCard .body p{margin:0 0 10px;font-size:13px;line-height:1.35;color:#e7edf0}

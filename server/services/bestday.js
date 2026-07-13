@@ -38,6 +38,42 @@ const TIPS = {
 
 function match(score) { return Math.min(99, 80 + Math.round((score - 55) / 1.6)); }
 
+// The day's four slots, each with a BROAD candidate pool so there's always a real
+// alternative to swap to ("did Table Mountain yesterday → give me something else").
+const SLOTS = [
+  { key: 'morning', label: 'Morning', pool: ['table-mountain', 'lions-head', 'signal-hill', 'kirstenbosch', 'rhodes-memorial', 'bo-kaap', 'robben-island', 'silvermine'] },
+  { key: 'midday', label: 'Midday', pool: ['kalk-bay', 'hout-bay', 'va-waterfront', 'old-biscuit-mill', 'simons-town', 'company-garden', 'district-six', 'zeitz-mocaa', 'two-oceans-aquarium', 'bo-kaap'] },
+  { key: 'afternoon', label: 'Afternoon', pool: ['cape-point', 'groot-constantia', 'stellenbosch', 'chapmans-peak', 'boulders-penguins', 'silvermine', 'kirstenbosch'] },
+  { key: 'sunset', label: 'Sunset', pool: ['camps-bay', 'llandudno', 'signal-hill', 'clifton', 'chapmans-peak', 'sea-point-promenade', 'maidens-cove'] },
+];
+
+// Weather + tide context (shared by build + swap).
+async function context(base) {
+  const fc = await weather.forecast(base.lat, base.lon, 1).catch(() => ({ days: [] }));
+  const d = (fc.days && fc.days[0]) || {};
+  const w = { maxTempC: d.maxTempC, maxWindKmh: d.maxWindKmh, rainProb: d.maxRainProb, sunrise: d.sunrise, sunset: d.sunset };
+  return { d, w, tide: d.date ? tides.forDate(d.date) : null };
+}
+
+// Rank a pool by best-moment score for the day, excluding ids already used/swapped.
+function rankPool(pool, w, tide, exclude) {
+  const ex = new Set(exclude || []);
+  return pool.map(byId).filter((a) => a && !ex.has(a.id))
+    .map((a) => ({ a, s: scoreAttraction(a, { weather: w, tide }).score }))
+    .sort((x, y) => y.s - x.s);
+}
+
+// Swap one slot for its next-best alternative (excluding what's shown/rejected).
+async function swap(base, slotIndex, exclude) {
+  const slot = SLOTS[slotIndex]; if (!slot) return null;
+  const { w, tide } = await context(base);
+  const top = rankPool(slot.pool, w, tide, exclude)[0];
+  if (!top) return null;
+  const time = slotIndex === 3 ? (fmt(w.sunset) || '18:40') : ['08:15', '11:30', '15:00'][slotIndex];
+  const stop = await planStop(top.a.id, time, base);
+  return stop && { ...stop, slotIndex, match: match(top.s) };
+}
+
 async function planStop(id, time, base) {
   const a = byId(id);
   if (!a) return null;
@@ -85,24 +121,14 @@ async function build(base) {
     { icon: 'traffic', label: 'Traffic', value: 'Light', tone: 'good' },          // stub: needs live traffic feed
   ];
 
-  // --- Best Day Plan (4 curated stops, best-scored per slot) ---
-  const ctxFor = (a) => ({ weather: w, tide });
-  const rank = (ids) => ids.map(byId).filter(Boolean)
-    .map((a) => ({ a, s: scoreAttraction(a, ctxFor(a)).score }))
-    .sort((x, y) => y.s - x.s);
-  const sunset = w.sunset ? sunHour(w.sunset) : 18.7;
-  const picks = [
-    { pool: ['table-mountain', 'lions-head', 'signal-hill', 'kirstenbosch'], time: '08:15' },
-    { pool: ['kalk-bay', 'hout-bay', 'bo-kaap', 'va-waterfront'], time: '11:30' },
-    { pool: ['cape-point', 'groot-constantia', 'chapmans-peak', 'silvermine'], time: '15:00' },
-    { pool: ['camps-bay', 'llandudno', 'signal-hill', 'clifton'], time: fmt(w.sunset) || '18:40' },
-  ];
+  // --- Best Day Plan (4 slots, best-scored per slot; each stop is swappable) ---
   const used = new Set(); const plan = [];
-  for (const p of picks) {
-    const top = rank(p.pool).find((r) => !used.has(r.a.id));
+  for (let i = 0; i < SLOTS.length; i++) {
+    const top = rankPool(SLOTS[i].pool, w, tide, [...used])[0];
     if (!top) continue; used.add(top.a.id);
-    const stop = await planStop(top.a.id, p.time, base);
-    if (stop) plan.push({ ...stop, match: match(top.s) });
+    const time = i === 3 ? (fmt(w.sunset) || '18:40') : ['08:15', '11:30', '15:00'][i];
+    const stop = await planStop(top.a.id, time, base);
+    if (stop) plan.push({ ...stop, slotIndex: i, match: match(top.s) });
   }
 
   return {
@@ -115,4 +141,4 @@ async function build(base) {
   };
 }
 
-module.exports = { build };
+module.exports = { build, swap };

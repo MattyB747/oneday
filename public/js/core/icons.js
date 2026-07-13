@@ -22,6 +22,7 @@ export const icons = {
   people: S('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 6a3 3 0 0 1 0 6M17 15c2.5.4 4 1.9 4 5"/>'),
   shield: S('<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>'),
   car: S('<path d="M5 12l1.5-4.5A2 2 0 0 1 8.4 6h7.2a2 2 0 0 1 1.9 1.5L19 12v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M5 12h14M7.5 15h.01M16.5 15h.01"/>'),
+  swap: S('<path d="M4 8h13l-3-3M20 16H7l3 3"/>'),
 };
 
 export const ic = (name) => icons[name] || '';
