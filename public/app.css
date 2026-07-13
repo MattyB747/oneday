@@ -52,7 +52,11 @@ button{font-family:inherit;cursor:pointer}
 .dayHead .dwx .ic{width:15px;height:15px}
 .stops{display:flex;flex-direction:column;gap:14px}
 .stop{display:flex;gap:16px;background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 6px 20px rgba(15,36,48,.05)}
-.stopImg{flex:0 0 200px;background:#dfe8ec center/cover no-repeat;min-height:200px}
+.stopImg{position:relative;flex:0 0 200px;background:#dfe8ec center/cover no-repeat;min-height:200px}
+.stop.meal .stopImg{flex:0 0 120px;min-height:120px;background:#eef4f6;display:flex;align-items:center;justify-content:center}
+.stop.meal{background:#fbfdfe}
+.mealTag{display:inline-flex;align-items:center;gap:6px;color:var(--teal-d);font-weight:800;font-size:13px}
+.mealTag .ic{width:18px;height:18px}
 .stopBody{flex:1;padding:16px 18px;min-width:0}
 .stopTop{display:flex;align-items:center;gap:10px}
 .stopTime{background:#e3f5f3;color:var(--teal-d);font-weight:800;font-size:13px;padding:4px 11px;border-radius:999px}

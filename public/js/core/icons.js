@@ -28,6 +28,7 @@ export const icons = {
   spark: S('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>'),
   info: S('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'),
   ext: S('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'),
+  fork: S('<path d="M6 3v7a2 2 0 0 0 4 0V3M8 12v9M17 3c-1.5 0-2.5 2-2.5 5s1 4 2.5 4v9"/>'),
 };
 
 export const ic = (name) => icons[name] || '';

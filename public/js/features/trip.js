@@ -8,16 +8,19 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 function toast(m) { const t = $('toast'); if (!t) return; t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2400); }
 
 let ctx = { days: 3 };            // { tripId, lat, lon, days }
-const seenByType = {};            // typeId -> [attractionIds shown] (for swap exclusion)
+const seenByKey = {};             // region|kind|mealType -> [ids shown] (swap exclusion)
+
+const swapKey = (s) => `${s.region}|${s.kind || 'activity'}|${s.mealType || ''}`;
 
 function stopHtml(s) {
   const d = s.details || {};
+  const isMeal = s.kind === 'meal';
   const detailBits = [
     d.cost ? `<span class="db">${ic('tag')} ${esc(d.cost)}${d.costNote ? ' · ' + esc(d.costNote) : ''}</span>` : '',
     d.wear ? `<span class="db">${ic('shirt')} ${esc(d.wear)}</span>` : '',
   ].join('');
-  return `<div class="stop" data-type="${esc(s.typeId)}" data-id="${esc(s.attraction.id)}">
-    <div class="stopImg" ${s.image ? `style="background-image:url('${esc(s.image)}')"` : ''}></div>
+  return `<div class="stop${isMeal ? ' meal' : ''}" data-region="${esc(s.region)}" data-kind="${esc(s.kind || 'activity')}" data-meal="${esc(s.mealType || '')}" data-id="${esc(s.attraction.id)}">
+    <div class="stopImg" ${s.image ? `style="background-image:url('${esc(s.image)}')"` : ''}>${isMeal ? `<span class="mealTag">${ic('fork')} ${esc(s.mealType || 'Meal')}</span>` : ''}</div>
     <div class="stopBody">
       <div class="stopTop"><span class="stopTime">${esc(s.hhmm || '')}</span><button class="swapX" title="Swap this out">✕</button></div>
       <h3>${esc(s.attraction.name)}</h3>
@@ -25,7 +28,7 @@ function stopHtml(s) {
       <div class="whys">${(s.why || []).map((w) => `<div class="why">${ic('spark')} ${esc(w)}</div>`).join('')}</div>
       <div class="detailRow">${detailBits}</div>
       ${d.know ? `<div class="know">${ic('info')} ${esc(d.know)}</div>` : ''}
-      <a class="bookLink" href="${esc(s.bookUrl || '#')}" target="_blank" rel="noopener">Check availability & book ${ic('ext')}</a>
+      <a class="bookLink" href="${esc(s.bookUrl || '#')}" target="_blank" rel="noopener">${isMeal ? 'Book a table' : 'Check availability & book'} ${ic('ext')}</a>
     </div>
   </div>`;
 }
@@ -41,16 +44,16 @@ function render(plan) {
       <div class="stops">${day.slots.map(stopHtml).join('')}</div>
     </div>`).join('');
   // Seed swap-exclusion with everything shown.
-  (plan.days || []).forEach((day) => day.slots.forEach((s) => { (seenByType[s.typeId] = seenByType[s.typeId] || []).push(s.attraction.id); }));
+  (plan.days || []).forEach((day) => day.slots.forEach((s) => { const k = swapKey(s); (seenByKey[k] = seenByKey[k] || []).push(s.attraction.id); }));
 }
 
 async function doSwap(stopEl) {
-  const typeId = stopEl.dataset.type;
+  const region = stopEl.dataset.region, kind = stopEl.dataset.kind, mealType = stopEl.dataset.meal || undefined;
+  const key = `${region}|${kind}|${mealType || ''}`;
   const btn = stopEl.querySelector('.swapX'); if (btn) { btn.textContent = '…'; btn.disabled = true; }
   try {
-    const s = await api('/api/itinerary/swap', { method: 'POST', body: { tripId: ctx.tripId, lat: ctx.lat, lon: ctx.lon, days: ctx.days, typeId, exclude: seenByType[typeId] || [] } });
-    (seenByType[typeId] = seenByType[typeId] || []).push(s.attraction.id);
-    // keep the day/time from the replaced stop
+    const s = await api('/api/itinerary/swap', { method: 'POST', body: { tripId: ctx.tripId, lat: ctx.lat, lon: ctx.lon, days: ctx.days, region, kind, mealType, exclude: seenByKey[key] || [] } });
+    (seenByKey[key] = seenByKey[key] || []).push(s.attraction.id);
     s.hhmm = stopEl.querySelector('.stopTime')?.textContent || '';
     const wrap = document.createElement('div'); wrap.innerHTML = stopHtml(s);
     stopEl.replaceWith(wrap.firstElementChild);

@@ -32,7 +32,7 @@ router.post('/api/itinerary/swap', async (req, res) => {
     const base = baseFrom(req);
     if (!base) return res.status(400).json({ error: 'Location required' });
     const b = req.body || {};
-    const stop = await itinerary.swap(base, Number(b.days) || 3, b.typeId, Array.isArray(b.exclude) ? b.exclude : []);
+    const stop = await itinerary.swap(base, Number(b.days) || 3, b.region, b.kind || 'activity', b.mealType, Array.isArray(b.exclude) ? b.exclude : []);
     if (!stop) return res.status(404).json({ error: 'No more alternatives here' });
     res.json(stop);
   } catch (err) {
