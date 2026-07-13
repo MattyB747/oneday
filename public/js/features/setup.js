@@ -12,7 +12,7 @@ async function go(payload) {
     const res = await api('/api/trip', { method: 'POST', body: payload });
     // Persist both the id AND the resolved location, so a server restart (which
     // clears in-memory trips) can't strand us — we re-send coords as a fallback.
-    try { sessionStorage.setItem('tempoTrip', res.tripId); sessionStorage.setItem('tempoStay', JSON.stringify(res.stay)); } catch (_) {}
+    try { sessionStorage.setItem('onedayTrip', res.tripId); sessionStorage.setItem('onedayStay', JSON.stringify(res.stay)); } catch (_) {}
     show('dash');
     await loadDashboard(res.tripId, res.stay);
   } catch (err) {
@@ -40,8 +40,8 @@ export function mountSetup() {
 
   // Resume an existing trip if we have one (with the stored location as fallback).
   try {
-    const t = sessionStorage.getItem('tempoTrip');
-    const stay = JSON.parse(sessionStorage.getItem('tempoStay') || 'null');
+    const t = sessionStorage.getItem('onedayTrip');
+    const stay = JSON.parse(sessionStorage.getItem('onedayStay') || 'null');
     if (t && stay) { show('dash'); loadDashboard(t, stay); }
   } catch (_) {}
 }

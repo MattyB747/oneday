@@ -1,6 +1,6 @@
 'use strict';
 
-// The constraint optimiser — the heart of Tempo. Given where you're based, a set
+// The constraint optimiser — the heart of Best Day. Given where you're based, a set
 // of days (each with weather + tides + sun times), and a basket of activity types,
 // it anchors each activity to its best time + place using constraints, then builds
 // each day around the anchors. Every placement records a real WHY (the factors

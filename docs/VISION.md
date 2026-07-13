@@ -1,8 +1,34 @@
-# Tempo — AI Destination Optimiser
+# Best Day — AI Destination Optimiser
+
+## v1.3 (2026-07-13) — LOCKED: auto-planned 3-persona "Trippies"
+Replaces the manual basket picker. "Plan a Trippie" = pick number of days → Trippie
+plans everything from ALL data → presents **3 complete plans** to choose from:
+  1. **Tourist** — the big-ticket must-sees.
+  2. **Local** — skip the tourist traps; how a local spends a fun few days.
+  3. **Surprise me** (wildcard) — Trippie's "trust me" pick of the single best days
+     from all data, ignoring persona.
+User curates NOTHING — just picks a vibe. Each plan is a full day-by-day itinerary;
+every stop shows **cost (ZAR, approx) · what it is · why it's best done then · how it
+links to the next**. Curated AND sequenced from weather + tides + events + specials +
+traffic. The sequencer (lib/optimiser.js) is reused; a new CURATION engine sits on top.
+
+**Decisions locked:** 3rd plan = Surprise/wildcard. Narrative = rule-based now
+(free, deterministic), add Claude persona-voice later (needs API key, pennies/plan).
+
+**Build order (build-once):**
+  1. Expand + persona-tag (tourist↔local) + COST the dataset (~60–80 spots incl. real
+     local gems: coffee/food/live-music/neighbourhoods/hidden beaches).
+  2. Curated events/specials seed + adapter (recurring markets, First Thursdays,
+     festivals by date) → weave into plans; wire Ticketmaster (free) later.
+  3. Curation engine — persona selection (balanced, non-repetitive, geo-sane) → feeds
+     the sequencer.
+  4. 3-plan UI: days → 3 plan cards → full itinerary (cost + linking narrative).
+  5. Real free feeds (real tides, CoCT/SANParks/Cableway status) + AI narrative later.
+The old basket picker (planner.js) is superseded by this.
 
 ## v1.2 (2026-07-13) — the real thesis: DATA is the product; recommend MOMENTS
 Owner's key insight: **the data is the product; the AI just joins the dots.** Best
-Day/Tempo becomes a data-aggregation platform continuously ingesting many free
+Day/Best Day becomes a data-aggregation platform continuously ingesting many free
 sources, layered:
   L1 Government (City of Cape Town Open Data, SANParks, SA Weather Service,
      Hydrographic tides/sun/moon, environmental AQI/UV/fire) — the free gold.
@@ -45,10 +71,10 @@ sunset · what's on (events/markets/festivals) · disruptions (loadshedding,
 roadworks) · cautions/things to know · in-season nudges (whale season → whales,
 flower season → West Coast). Immediate value, zero planning.
 
-**Layer 2 — "Plan a Trippie" (optimiser).** The app is **Tempo**; a plan you build
+**Layer 2 — "Plan a Trippie" (optimiser).** The app is **Best Day**; a plan you build
 is **a Trippie**. Tap Plan a Trippie → a LIBRARY of activity types (mountain,
 wine, hike, beach, whale trip, red bus…) you **swipe into a basket** + pick dates
-(e.g. 3 days). Tempo then schedules each chosen element into its **optimal time +
+(e.g. 3 days). Best Day then schedules each chosen element into its **optimal time +
 place** using CONSTRAINTS.
 
 **The constraint-scheduling is the whole product.** Each activity is anchored to
@@ -62,7 +88,7 @@ traffic avoidance, proximity to accommodation, specials/opening hours.
 The sections below are the original v1.0 brief (kept for reference).
 
 ## Vision
-Tempo is an AI-powered destination optimiser that creates and continuously
+Best Day is an AI-powered destination optimiser that creates and continuously
 improves the perfect Cape Town itinerary. Not a travel guide — an **optimisation
 engine**. Uses live data + historical data + AI to decide *what* to do, *when*,
 *in what order*, *why*, and *how the plan should change as conditions change*.
@@ -73,7 +99,7 @@ It should feel like the world's best local concierge travelling with you.
 > happening during their exact stay.
 
 ## Design philosophy
-Travel apps fail by making users fill in long questionnaires. Tempo does the
+Travel apps fail by making users fill in long questionnaires. Best Day does the
 opposite: **learn from behaviour, not forms.** The first experience must feel
 effortless — value within seconds.
 
@@ -164,5 +190,5 @@ Sydney, Melbourne, Vancouver, Barcelona, Amsterdam, Lisbon, Tokyo, Singapore,
 Dubai, New York. Same platform — only the destination data changes.
 
 ## Product promise
-Tempo doesn't tell you what's in Cape Town. It tells you **how to experience
+Best Day doesn't tell you what's in Cape Town. It tells you **how to experience
 the very best of Cape Town, at exactly the right time, for you.**

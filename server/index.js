@@ -11,7 +11,7 @@ app.use(express.json({ limit: '256kb' }));
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
-app.get('/health', (_req, res) => res.json({ ok: true, app: 'tempo', ai: config.hasAI() }));
+app.get('/health', (_req, res) => res.json({ ok: true, app: 'oneday', ai: config.hasAI() }));
 
 // Proof-of-life: live Cape Town weather via the free adapter (M0).
 app.get('/api/weather', async (_req, res) => {
@@ -26,12 +26,13 @@ app.get('/api/weather', async (_req, res) => {
 // Trip setup + optimisation routes.
 app.use('/', require('./routes/trip'));
 app.use('/', require('./routes/plan'));
+app.use('/', require('./routes/scores'));
 
 app.use(express.static(PUBLIC_DIR, { index: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
 
 app.listen(config.PORT, () => {
-  console.log(`Tempo [${config.NODE_ENV}] on :${config.PORT} (AI: ${config.hasAI() ? 'on' : 'off — rule-based'})`);
+  console.log(`Best Day [${config.NODE_ENV}] on :${config.PORT} (AI: ${config.hasAI() ? 'on' : 'off — rule-based'})`);
 });
 
 module.exports = app;

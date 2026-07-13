@@ -1,7 +1,7 @@
 'use strict';
 
 // In-memory trip state (the seam to swap for a DB later). A trip is the whole
-// context Tempo optimises around: who, how long, where they're based, when they
+// context Best Day optimises around: who, how long, where they're based, when they
 // arrive — plus the taste profile that builds from their reactions.
 
 const crypto = require('crypto');

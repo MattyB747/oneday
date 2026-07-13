@@ -1,4 +1,4 @@
-# Tempo — Data Source Map
+# Best Day — Data Source Map
 
 The data strategy IS the product strategy. Goal: one place that combines
 weather + events + traffic + tides + wildlife + attractions so a visitor makes

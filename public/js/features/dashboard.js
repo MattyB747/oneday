@@ -52,7 +52,7 @@ function dayCardHtml(d) {
 }
 
 export async function loadDashboard(tripId, stay) {
-  if (!stay) { try { stay = JSON.parse(sessionStorage.getItem('tempoStay') || 'null'); } catch (_) {} }
+  if (!stay) { try { stay = JSON.parse(sessionStorage.getItem('onedayStay') || 'null'); } catch (_) {} }
   if (stay && $('stayLabel')) $('stayLabel').textContent = stay.label;
   const wrap = $('dayCarousel');
   if (wrap) wrap.innerHTML = '<div class="soon" style="padding:24px">Reading the days…</div>';

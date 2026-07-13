@@ -61,7 +61,7 @@ async function build() {
   $('buildTrippie').textContent = 'Optimising…';
   try {
     // Include the stored location so a memory-cleared server still has a base.
-    let stay = null; try { stay = JSON.parse(sessionStorage.getItem('tempoStay') || 'null'); } catch (_) {}
+    let stay = null; try { stay = JSON.parse(sessionStorage.getItem('onedayStay') || 'null'); } catch (_) {}
     const body = { tripId, days, basket: [...basket] };
     if (stay && Number.isFinite(stay.lat)) { body.lat = stay.lat; body.lon = stay.lon; }
     const plan = await api('/api/plan', { method: 'POST', body });
@@ -74,7 +74,7 @@ async function build() {
 
 export function mountPlanner() {
   document.getElementById('planBtn')?.addEventListener('click', () => {
-    let t = null; try { t = sessionStorage.getItem('tempoTrip'); } catch (_) {}
+    let t = null; try { t = sessionStorage.getItem('onedayTrip'); } catch (_) {}
     openPlanner(t);
   });
   $('daysPick')?.addEventListener('click', (e) => { const b = e.target.closest('.dayChip'); if (!b) return; days = Number(b.dataset.n); renderDays(); });

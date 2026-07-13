@@ -1,4 +1,4 @@
-# Tempo
+# Best Day
 
 AI destination optimiser for Cape Town. See `docs/VISION.md` for the full brief.
 
