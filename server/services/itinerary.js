@@ -15,14 +15,25 @@ const { byId } = require('../data/attractions');
 const { detailsFor } = require('../data/details');
 const restaurants = require('../data/restaurants');
 
-// Geographic day-clusters (what a local would actually tour together).
+// Geographic day-clusters — what a local would actually tour in one day, so you
+// never criss-cross the city. Ordered by priority so a short trip gets the best,
+// most self-contained days first; the far-east Winelands (needs a car, a whole
+// day) only appears on longer trips. Constantia (Southern Suburbs, ~20 min from
+// town) is kept SEPARATE from the Cape Winelands (Stellenbosch/Franschhoek, ~45
+// min east) — collapsing the two was what produced nonsensical cross-town hops.
 const REGIONS = [
   { key: 'city', name: 'City Bowl & Table Mountain', windSensitive: true,
-    spots: ['table-mountain', 'lions-head', 'bo-kaap', 'companys-garden', 'va-waterfront', 'zeitz-mocaa', 'district-six', 'rhodes-memorial'], sunset: ['signal-hill'] },
-  { key: 'peninsula', name: 'The Cape Peninsula', spots: ['cape-point', 'hout-bay', 'noordhoek', 'silvermine'], sunset: ['chapmans-peak'] },
-  { key: 'falsebay', name: 'False Bay & the Penguins', spots: ['boulders-penguins', 'kalk-bay', 'muizenberg', 'simons-town'], sunset: [] },
-  { key: 'atlantic', name: 'Atlantic Seaboard', spots: ['clifton', 'maidens-cove', 'sea-point-promenade'], sunset: ['camps-bay', 'llandudno'] },
-  { key: 'winelands', name: 'Constantia Winelands', spots: ['groot-constantia', 'kirstenbosch', 'stellenbosch'], sunset: [] },
+    spots: ['table-mountain', 'lions-head', 'bo-kaap', 'companys-garden', 'district-six'], sunset: ['signal-hill'] },
+  { key: 'peninsula', name: 'The Cape Peninsula', windSensitive: false,
+    spots: ['cape-point', 'hout-bay', 'noordhoek', 'silvermine', 'chapmans-peak'], sunset: ['chapmans-peak'] },
+  { key: 'falsebay', name: 'False Bay & the Penguins', windSensitive: false,
+    spots: ['boulders-penguins', 'simons-town', 'kalk-bay', 'muizenberg'], sunset: [] },
+  { key: 'atlantic', name: 'Atlantic Seaboard & the Waterfront', windSensitive: false,
+    spots: ['va-waterfront', 'zeitz-mocaa', 'two-oceans-aquarium', 'robben-island', 'clifton', 'maidens-cove', 'sea-point-promenade'], sunset: ['camps-bay', 'llandudno'] },
+  { key: 'constantia', name: 'Constantia & the Southern Suburbs', windSensitive: false,
+    spots: ['kirstenbosch', 'groot-constantia', 'rhodes-memorial'], sunset: [] },
+  { key: 'winelands', name: 'The Cape Winelands', windSensitive: false,
+    spots: ['stellenbosch', 'spier', 'franschhoek-tram'], sunset: [] },
 ];
 
 const matchOf = (attrId, day) => { const a = byId(attrId); if (!a) return 85; return Math.min(99, 80 + Math.round((scoreAttraction(a, { weather: day.weather, tide: day.tides }).score - 55) / 1.6)); };

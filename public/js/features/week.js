@@ -5,6 +5,7 @@ import { api } from '../core/api.js';
 import { loadTrip } from './trip.js';
 
 const $ = (id) => document.getElementById(id);
+const CAPE_TOWN = { lat: -33.9249, lon: 18.4241 }; // city default — no "where are you staying?" needed
 let days = 5;
 let ctx = null; // { tripId, lat, lon }
 
@@ -70,4 +71,12 @@ export function mountWeek() {
     } catch (err) { toast(err.message || 'Could not plan — try again'); show('week'); }
     finally { $('planBtn').disabled = false; $('planBtn').textContent = 'Plan my trip →'; }
   });
+
+  // Land straight on Cape Town's 7 days — unless a base was set this session.
+  let boot = { ...CAPE_TOWN };
+  try {
+    const t = sessionStorage.getItem('odTrip'); const stay = JSON.parse(sessionStorage.getItem('odStay') || 'null');
+    if (t && stay) boot = { tripId: t, lat: stay.lat, lon: stay.lon };
+  } catch (_) {}
+  loadWeek(boot);
 }

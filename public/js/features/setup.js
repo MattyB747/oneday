@@ -31,10 +31,5 @@ export function mountSetup() {
   const submit = () => { const v = ($('stayInput')?.value || '').trim(); if (!v) return toast('Where are you staying?'); go({ stay: v }); };
   $('goBtn')?.addEventListener('click', submit);
   $('stayInput')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
-
-  // Returning within the session — jump back to the dashboard.
-  try {
-    const t = sessionStorage.getItem('odTrip'); const stay = JSON.parse(sessionStorage.getItem('odStay') || 'null');
-    if (t && stay) loadWeek({ tripId: t, lat: stay.lat, lon: stay.lon });
-  } catch (_) {}
+  // Boot + session-restore is owned by week.js; this screen is now just the optional base form.
 }

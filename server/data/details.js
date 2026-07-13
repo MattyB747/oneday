@@ -29,6 +29,8 @@ const D = {
   'kalk-bay': { cost: 'Free', wear: 'Casual', know: 'Seafood, antique shops and a working harbour. Parking is tight around lunchtime.' },
   'silvermine': { cost: 'From R80', wear: 'Hiking shoes + water', know: 'An easy reservoir walk with views over both oceans; you can swim in summer.' },
   'stellenbosch': { cost: 'From R100', costNote: 'tastings vary', wear: 'Smart casual', know: 'About 45 min away — designate a driver or book a wine tour so everyone can taste.' },
+  'spier': { cost: 'From R90', costNote: 'tasting; picnic extra', wear: 'Smart casual + a hat for the lawns', know: 'Great with kids — book a picnic on the lawn and pre-book the tasting on busy weekends.' },
+  'franschhoek-tram': { cost: 'From R290', costNote: 'day ticket', wear: 'Smart casual + sunscreen', know: 'Book the tram online and start early — pick a line of 4–5 estates so you’re not rushed. A designated driver still helps for the trip home.' },
   'simons-town': { cost: 'Free', wear: 'Casual', know: 'A historic naval town and the gateway to the Boulders penguins.' },
   'bree-street': { cost: 'R250–500pp', costNote: 'dinner', wear: 'Smart casual', know: 'The city’s hottest restaurant strip — book ahead, and it’s liveliest in the evening.' },
   'llandudno': { cost: 'Free', wear: 'Swimwear + a windbreaker', know: 'No shops or facilities — bring everything. One of the best sunsets in the city.' },
