@@ -1,5 +1,39 @@
 # Tempo — AI Destination Optimiser
 
+## v1.2 (2026-07-13) — the real thesis: DATA is the product; recommend MOMENTS
+Owner's key insight: **the data is the product; the AI just joins the dots.** Best
+Day/Tempo becomes a data-aggregation platform continuously ingesting many free
+sources, layered:
+  L1 Government (City of Cape Town Open Data, SANParks, SA Weather Service,
+     Hydrographic tides/sun/moon, environmental AQI/UV/fire) — the free gold.
+  L2 Events (one giant calendar). L3 Nature (whales/penguins/surf/water temp —
+     the unique layer). L4 Roads/traffic/rail/bus. L5 Food (Dineplan/specials).
+  L6 Experiences (GetYourGuide/Viator affiliate = data + revenue). L7 Hotels.
+  L8 Historical intelligence (store every day for years → AI discovers patterns,
+     e.g. "Kalk Bay 09:00-11:00 rates 22% higher"). L9 Social signals (compliant
+     APIs only). L10 Commercial (in-context deals: "you're in Kalk Bay — lunch, 20% off").
+
+**Data model = "Decision Objects."** Don't treat sources as separate datasets.
+Normalise every signal into one shape answering: *does this make an experience
+better, worse, or different?* e.g. for Kalk Bay: sunny 22° = +, strong SE wind =
+− (outdoor dining), low tide = + (rock pools), live jazz = + (if user likes music),
+road closure = − (access), restaurant special = + (value), whale sighting = +
+(nature). The engine weighs these vs the user's prefs → a **Best Moment Score**.
+
+**We recommend MOMENTS, not attractions.** Not "go to Table Mountain" but
+"Tue 07:15 Table Mountain — cloud inversion, low wind, quiet, perfect sunrise."
+Plus a **live score per attraction** (Table Mountain: today 98/100 ✔perfect weather
+✔no queue ✔light wind; tomorrow 61/100 ✗high wind ✗cloud ✗buses → go today).
+The product answers not "what to do" but **"when is the BEST time to do it?"**
+
+Name in the running: **Best Day** ("we help you have the best day possible, every
+day you're here") — emotional, plain-English, captures the promise. (Rename is 1
+command; not locked yet.)
+
+Architecture already leans this way: adapters per source + a deterministic scoring
+engine that records WHY. Next step = formalise signals as Decision Objects and add
+the Best Moment Score + per-attraction live scores. See docs/DATA-SOURCES.md.
+
 ## Refined model (v1.1, 2026-07-13) — supersedes the setup/discovery flow below
 Two layers:
 
