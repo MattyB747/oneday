@@ -1,5 +1,31 @@
 # Best Day — AI Destination Optimiser
 
+## v1.6 (2026-07-13) — PRODUCT ARCHITECTURE: organise by QUESTIONS
+We replace ~20 apps (Google, TripAdvisor, Instagram, weather, maps, events,
+bookings, Reddit, SANParks, tides…). The insight: don't organise by data source or
+category — organise by the QUESTIONS a visitor actually asks. Every screen answers
+ONE question and returns a confident decision (never raw data).
+
+The home = a menu of questions:
+- ⭐ Plan My Trip (3–7 days)          → BUILT ✅ (the itinerary, live on real data)
+- 📍 What's Best Near Me? (few hours) → quick win: engine ranks nearby by
+     best-moment-now, filtered to what fits the hours you have + travel time
+- 🎉 What's Special Today?            → needs EVENTS feed (Ticketmaster+curated) +
+     "only today" logic (whale spotted, market today, rare weather); half-buildable
+     now (sightings/weather/seasonal), festivals need the events feed
+- 🍷 Find Me Something I'll Love      → needs the PREFERENCE layer (LOVE/MAYBE/NOT)
+- 🌅 Surprise Me                      → quick win: engine's single highest-scoring
+     unexpected pick today + a "trust me" why
+
+Never "here's weather" → instead "today is the best day this week for Table
+Mountain." Never "here's events" → "a food festival 12 min away, once a year,
+matches you." We transform disconnected sources into clear decisions.
+
+**Build-readiness (honest):** Plan My Trip live; Surprise Me + What's Best Near Me
+are quick wins on the existing engine; What's Special Today needs events; Find Me
+Something I'll Love needs the preference layer. Next: question-oriented home + ship
+the two quick-win questions, then events, then preferences.
+
 ## v1.5 (2026-07-13) — LOCKED: GLOBAL coordinate-native engine, Cape Town first
 OneDay is NOT a Cape Town app — it's a global, location-aware experience engine
 that launches in Cape Town. Built around COORDINATES, not city names. Every request
