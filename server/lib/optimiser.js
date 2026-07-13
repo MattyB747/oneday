@@ -32,10 +32,10 @@ function chooseDay(type, days, load) {
   const rain = (x) => (x.d.weather ? x.d.weather.rainProb : 0) || 0;
   const wind = (x) => (x.d.weather ? x.d.weather.maxWindKmh : 0) || 0;
   let pick;
-  if (type.anchor === 'morning-lowwind') pick = open.slice().sort((a, b) => wind(a) - wind(b) || rain(a) - rain(b) || load[a.i] - load[b.i])[0];
-  else if (type.anchor === 'flexible') pick = open.slice().sort((a, b) => rain(b) - rain(a) || load[a.i] - load[b.i])[0]; // do indoor/flexible on the wettest day
-  else if (type.anchor === 'lowtide') pick = open.slice().sort((a, b) => (daylightLows(b.d).length - daylightLows(a.d).length) || rain(a) - rain(b) || load[a.i] - load[b.i])[0];
-  else pick = open.slice().sort((a, b) => rain(a) - rain(b) || load[a.i] - load[b.i])[0]; // clear, least-loaded
+  if (type.anchor === 'morning-lowwind') pick = open.slice().sort((a, b) => wind(a) - wind(b) || load[a.i] - load[b.i])[0];
+  else if (type.anchor === 'flexible') pick = open.slice().sort((a, b) => rain(b) - rain(a) || load[a.i] - load[b.i])[0]; // indoor/flexible on the wettest day
+  else if (type.anchor === 'lowtide') pick = open.slice().sort((a, b) => (daylightLows(b.d).length - daylightLows(a.d).length) || load[a.i] - load[b.i] || rain(a) - rain(b))[0];
+  else pick = open.slice().sort((a, b) => load[a.i] - load[b.i] || rain(a) - rain(b))[0]; // spread across days first, then prefer clear
   return pick.i;
 }
 
@@ -93,6 +93,22 @@ function schedule(type, base, day) {
   return { attraction: pick, hour, why };
 }
 
+// Lay a single day's activities on a timeline so they don't overlap. Each starts
+// at its ideal hour or after the previous one finishes (duration + ~30min travel),
+// whichever is later. Adds a "shifted from Xh" note to the WHY when moved.
+function packDay(slots, day) {
+  slots.sort((a, b) => a.hour - b.hour);
+  let cursor = null;
+  for (const s of slots) {
+    const ideal = s.hour;
+    let start = cursor == null ? ideal : Math.max(ideal, cursor);
+    if (start !== ideal && Math.abs(start - ideal) >= 0.5) s.why.push(`Shifted to ${hhmm(start)} so it doesn’t clash with your earlier stop (allowing travel time).`);
+    s.hour = start; s.hhmm = hhmm(start);
+    const durH = (s.attraction.duration || 90) / 60;
+    cursor = start + durH + 0.5; // + ~30 min travel/transition buffer
+  }
+}
+
 // Build the full plan.
 function plan({ base, days, basket }) {
   const types = basket.map((id) => activitiesData.byId(id)).filter(Boolean)
@@ -113,12 +129,16 @@ function plan({ base, days, basket }) {
     load[di] += 1;
   }
 
-  // Order each day by time; return the shape the UI renders.
+  // Lay each day out on a real timeline: sort by ideal hour, then push each start
+  // to clear the previous activity's duration + a travel buffer, so nothing stacks
+  // at the same time. Sunset-anchored items keep their end-at-sunset intent.
+  for (let i = 0; i < days.length; i++) packDay(slotsByDay[i], days[i]);
+
   const out = days.map((d, i) => ({
     date: d.date,
     label: new Date(d.date + 'T12:00:00').toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'short' }),
     weather: d.weather,
-    slots: slotsByDay[i].sort((a, b) => a.hour - b.hour),
+    slots: slotsByDay[i],
   })).filter((d) => d.slots.length);
 
   return { days: out, notes };

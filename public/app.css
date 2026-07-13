@@ -106,9 +106,7 @@ button{font-family:inherit;cursor:pointer}
 .slot .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
 .slot .card h4{margin:0;font-size:17px;font-weight:800}
 .slot .card .area{color:var(--muted);font-size:13px;margin:2px 0 8px}
-.slot .whyBtn{background:none;border:1px solid var(--line);color:var(--accent2);border-radius:10px;padding:7px 12px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px}
-.slot .why{margin-top:10px;display:none;flex-direction:column;gap:8px}
-.slot .why.on{display:flex}
+.slot .why{margin-top:10px;display:flex;flex-direction:column;gap:8px}
 .slot .why .r{display:flex;gap:8px;background:#0d1728;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;line-height:1.4;color:var(--text)}
 .slot .why .r::before{content:"→";color:var(--accent2);font-weight:800}
 .itinNote{background:#1e1420;border:1px solid #5a2a3a;border-radius:12px;padding:12px;color:var(--muted);font-size:13px;margin-top:8px}

@@ -39,7 +39,6 @@ function slotHtml(s) {
     <div class="card">
       <h4>${esc(s.label)} — ${esc(s.attraction.name)}</h4>
       <div class="area">${esc(s.attraction.area)} · ${esc(s.attraction.blurb || '')}</div>
-      <button class="whyBtn" type="button">Why this? ${ic('season')}</button>
       <div class="why">${(s.why || []).map((w) => `<div class="r">${esc(w)}</div>`).join('')}</div>
     </div>
   </div>`;
@@ -55,8 +54,6 @@ function renderItinerary(plan) {
       ${d.slots.map(slotHtml).join('')}
     </div>`).join('')
     + (plan.notes || []).map((n) => `<div class="itinNote">${esc(n)}</div>`).join('');
-  // Wire the WHY toggles.
-  wrap.querySelectorAll('.whyBtn').forEach((b) => b.addEventListener('click', () => b.nextElementSibling.classList.toggle('on')));
 }
 
 async function build() {
