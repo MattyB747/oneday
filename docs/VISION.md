@@ -1,5 +1,46 @@
 # Best Day — AI Destination Optimiser
 
+## v1.5 (2026-07-13) — LOCKED: GLOBAL coordinate-native engine, Cape Town first
+OneDay is NOT a Cape Town app — it's a global, location-aware experience engine
+that launches in Cape Town. Built around COORDINATES, not city names. Every request
+begins with { lat, lon, localTime, availableDuration }. Setup asks ONLY location
+(no people count — dropped; group size only matters at booking).
+
+Flow: detect location → identify city + timezone + currency → load GLOBAL baseline
+data → load LOCAL data where available → find nearby candidates → score for the
+time available → build the day → recalc continuously.
+
+**Two coverage layers:**
+- GLOBAL BASELINE (works anywhere): weather, AQI, daylight, places (OSM/Google),
+  routes+traffic, global activities (GetYourGuide/Viator), major events
+  (Ticketmaster), Wikipedia trending, iNaturalist wildlife, reviews. PROVEN working
+  for Sydney (weather+wildlife+trending returned real data 2026-07-13).
+- DESTINATION ENHANCEMENT (featured cities e.g. Cape Town): curated attractions,
+  tides, local events/markets, road closures, transit status, booking integrations,
+  seasonal patterns.
+
+**Coverage rating (integrity):** each destination shows its honest data coverage
+("Sydney: Excellent — live weather/traffic/events/transport" vs "Limited live-event
+coverage — recommendations from places/weather/hours/travel"). Never imply data we
+don't have.
+
+**Auto-localisation on city change:** currency, language, units, timezone, transport
+assumptions, booking partners, weather model, event providers, tipping/hours norms.
+
+**Time-aware (drives frequent use, not just holidays):** 2 hours before a flight /
+one day near the hotel / 3-day stay / "what's unusually good near me this weekend" /
+business-trip evening ("finish 17:30 → one great dinner + one memorable thing").
+
+**The one real bottleneck:** curated PLACES don't scale to every city by hand. Cape
+Town is hand-curated (30 spots). Global coverage needs automatic place discovery via
+**OpenStreetMap Overpass (free, worldwide)** + Google Places; featured cities keep
+hand curation. The ENGINE (signals/scoring/optimiser/weather/AQI/trending/wildlife)
+is already location-agnostic — only the DATA layer is Cape-Town-specific today.
+
+**Next architecture step:** a `destination` layer (coords → city/tz/currency + which
+data layer) + OSM global place discovery + the coverage rating. Then the same Today
+engine runs anywhere. Brand: OneDay (oneday.capetown / oneday.sydney / …).
+
 ## v1.3 (2026-07-13) — LOCKED: auto-planned 3-persona "Trippies"
 Replaces the manual basket picker. "Plan a Trippie" = pick number of days → Trippie
 plans everything from ALL data → presents **3 complete plans** to choose from:
