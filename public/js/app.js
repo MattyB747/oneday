@@ -1,8 +1,6 @@
-// Best Day entry point. One clean mount per feature.
+// One Day · Cape Town — entry point.
 import { mountSetup } from './features/setup.js';
-import { mountDashboard } from './features/dashboard.js';
-import { mountPlanner } from './features/planner.js';
+import { mountToday } from './features/today.js';
 
 mountSetup();
-mountDashboard();
-mountPlanner();
+mountToday();

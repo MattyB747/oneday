@@ -5,15 +5,7 @@
 // prior baseline; a rise = trending. Cached daily (pageviews update daily).
 const https = require('https');
 
-// Wikipedia article titles for attractions that have them.
-const WIKI = {
-  'table-mountain': 'Table_Mountain', 'lions-head': 'Lion%27s_Head_(Cape_Town)', 'cape-point': 'Cape_Point',
-  'kirstenbosch': 'Kirstenbosch_National_Botanical_Garden', 'robben-island': 'Robben_Island',
-  'boulders-penguins': 'Boulders_Beach', 'bo-kaap': 'Bo-Kaap', 'chapmans-peak': "Chapman's_Peak",
-  'camps-bay': 'Camps_Bay', 'muizenberg': 'Muizenberg', 'kalk-bay': 'Kalk_Bay', 'zeitz-mocaa': 'Zeitz_MOCAA',
-  'groot-constantia': 'Groot_Constantia', 'stellenbosch': 'Stellenbosch', 'signal-hill': 'Signal_Hill_(Cape_Town)',
-  'simons-town': "Simon's_Town", 'hout-bay': 'Hout_Bay', 'district-six': 'District_Six', 'noordhoek': 'Noordhoek',
-};
+const WIKI = require('../../data/wiki'); // shared titles (trending + images)
 
 const cache = new Map(); // id -> { day, trend, views }
 const today = () => new Date().toISOString().slice(0, 10);

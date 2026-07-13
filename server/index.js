@@ -27,6 +27,7 @@ app.get('/api/weather', async (_req, res) => {
 app.use('/', require('./routes/trip'));
 app.use('/', require('./routes/plan'));
 app.use('/', require('./routes/scores'));
+app.use('/', require('./routes/today'));
 
 app.use(express.static(PUBLIC_DIR, { index: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));

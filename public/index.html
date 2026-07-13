@@ -3,63 +3,72 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1220" />
-  <title>Best Day</title>
+  <meta name="theme-color" content="#12a8a0" />
+  <title>One Day · Cape Town</title>
   <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
   <!-- ===== Setup — one question ===== -->
   <section class="screen on" id="setup">
     <div class="setupCard">
-      <div class="logo">Best<span>Day</span></div>
-      <p class="tagline">Make every day unforgettable.</p>
+      <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Your best day. Every day.</span></div>
       <h1>Where are you staying?</h1>
+      <p class="tag">We’ll build your best possible day around it.</p>
       <button class="locBtn" id="useLocation">📍 Use my current location</button>
       <div class="or">or</div>
       <input class="inp" id="stayInput" type="text" placeholder="Hotel, suburb or address" autocomplete="off" />
-      <button class="cta" id="goBtn">Show me Cape Town →</button>
+      <button class="cta" id="goBtn">Show me my best day →</button>
     </div>
   </section>
 
-  <!-- ===== Dashboard — rolling daily briefing ===== -->
-  <section class="screen" id="dash">
-    <header class="dashHead">
-      <div class="brandRow"><span class="logo sm">Best<span>Day</span></span></div>
-      <div class="stay" id="stayLabel">Cape Town</div>
-    </header>
-
-    <div class="daysBar"><h2>Your days</h2></div>
-    <div class="carousel" id="dayCarousel"></div>
-
-    <div class="planBar">
-      <button class="cta" id="planBtn">✦ Plan a Trippie</button>
+  <!-- ===== Today (the hero) ===== -->
+  <section class="screen" id="today">
+    <div class="topbar">
+      <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Your best day. Every day.</span></div>
+      <nav class="nav">
+        <a class="on">Today</a><a>Itinerary</a><a>Explore</a><a>Map</a><a>Bookings</a>
+      </nav>
+      <span class="sp"></span>
     </div>
-  </section>
 
-  <!-- ===== Plan a Trippie (basket picker) ===== -->
-  <section class="screen" id="planner">
-    <header class="dashHead">
-      <button class="backBtn" id="planBack" type="button">‹</button>
-      <div class="brandRow"><span class="logo sm">Plan a Trippie</span></div>
-    </header>
-    <div class="planScroll">
-      <h3 class="pLbl">How many days?</h3>
-      <div class="daysPick" id="daysPick"></div>
-      <h3 class="pLbl">What do you want to do? <span id="basketCount">0 chosen</span></h3>
-      <div class="libGrid" id="libGrid"></div>
+    <div class="hero">
+      <div class="heroImg" id="heroImg">
+        <div class="heroText">
+          <div class="hi">Good morning ☀️</div>
+          <div class="sub">Here’s your best day in <span id="stayCity">Cape Town</span>.</div>
+          <h1>Today is an<br>experience score of</h1>
+          <div class="scoreBig"><span id="scoreNum">–</span><small>/100</small></div>
+          <div class="whyLbl">Why today is amazing:</div>
+          <div class="chips" id="chips"></div>
+          <button class="heroCta" id="viewPlan">View Your Day Plan →</button>
+        </div>
+        <div class="floatCol">
+          <div class="wxCard">
+            <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>
+            <div><div class="big" id="wxTemp">–</div><div class="cond" id="wxCond">–</div></div>
+            <div class="meta" id="wxMeta"></div>
+          </div>
+          <div class="condCard">
+            <div class="h"><b>Live Conditions</b><a>View all</a></div>
+            <div id="condList"></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="planBar">
-      <button class="cta" id="buildTrippie" disabled>Build my Trippie</button>
-    </div>
-  </section>
 
-  <!-- ===== Itinerary (the built Trippie) ===== -->
-  <section class="screen" id="itinerary">
-    <header class="dashHead">
-      <button class="backBtn" id="itinBack" type="button">‹</button>
-      <div class="brandRow"><span class="logo sm">Your Trippie</span></div>
-    </header>
-    <div class="itinScroll" id="itinScroll"></div>
+    <div class="planWrap">
+      <div class="planCardBox">
+        <div class="planHead"><h2>Your Best Day Plan</h2><span class="ai">✦ AI-optimised for you</span></div>
+        <div class="planRow" id="planRow"></div>
+      </div>
+    </div>
+
+    <div class="whyRow" id="whyRow"></div>
+
+    <div class="partners">
+      <div class="plbl">Data from our sources</div>
+      <div class="row"><span>City of Cape Town</span><span>SAWS</span><span>SANParks</span><span>Cape Town Tourism</span><span>Open-Meteo</span><span>iNaturalist</span><span>Wikimedia</span></div>
+    </div>
   </section>
 
   <div id="toast"></div>
