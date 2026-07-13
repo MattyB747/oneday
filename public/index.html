@@ -12,12 +12,15 @@
   <section class="screen on" id="setup">
     <div class="setupCard">
       <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Your best day. Every day.</span></div>
-      <h1>Where are you staying?</h1>
-      <p class="tag">We’ll build your best possible day around it.</p>
+      <h1>Discover Cape Town.<br>Perfectly planned.</h1>
+      <p class="tag">Tell us two things — we plan your whole trip using everything happening while you’re here.</p>
+      <label class="qLbl">How many days are you staying?</label>
+      <div class="dayPick" id="dayPick"></div>
+      <label class="qLbl">Where are you staying?</label>
       <button class="locBtn" id="useLocation">📍 Use my current location</button>
       <div class="or">or</div>
       <input class="inp" id="stayInput" type="text" placeholder="Hotel, suburb or address" autocomplete="off" />
-      <button class="cta" id="goBtn">Show me my best day →</button>
+      <button class="cta" id="goBtn">Build My Trip →</button>
     </div>
   </section>
 
@@ -68,6 +71,22 @@
     <div class="partners">
       <div class="plbl">Data from our sources</div>
       <div class="row"><span>City of Cape Town</span><span>SAWS</span><span>SANParks</span><span>Cape Town Tourism</span><span>Open-Meteo</span><span>iNaturalist</span><span>Wikimedia</span></div>
+    </div>
+  </section>
+
+  <!-- ===== Itinerary (the planned holiday) ===== -->
+  <section class="screen" id="trip">
+    <div class="topbar">
+      <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Every day of your holiday. Perfectly planned.</span></div>
+    </div>
+    <div class="tripHead">
+      <h1 id="tripTitle">We’ve planned your perfect trip.</h1>
+      <p id="tripSub" class="tag">Every stop, at the best time — and here’s why.</p>
+    </div>
+    <div id="tripDays"></div>
+    <div class="partners">
+      <div class="plbl">Planned using live data from</div>
+      <div class="row"><span>Open-Meteo</span><span>iNaturalist</span><span>Wikipedia</span><span>SANParks</span><span>City of Cape Town</span><span>GetYourGuide</span></div>
     </div>
   </section>
 
