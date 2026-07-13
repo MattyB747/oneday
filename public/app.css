@@ -1,0 +1,68 @@
+/* Tempo — mobile-first. Warm coastal-dusk palette (Cape Town at golden hour). */
+:root{
+  --bg:#0b1220; --bg2:#111c2e; --card:#16233a; --line:#26344f;
+  --text:#eef3fb; --muted:#93a3bd; --accent:#ff8a4c; --accent2:#37c8c3;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+html,body{margin:0;padding:0;color:var(--text);font-family:var(--font)}
+body{min-height:100vh;min-height:100dvh;background:radial-gradient(120% 80% at 50% 0%,var(--bg2),var(--bg) 60%)}
+button{font-family:inherit;cursor:pointer}
+[hidden]{display:none!important} /* ensure the hidden attribute always wins over display rules */
+
+.logo{font-size:40px;font-weight:800;letter-spacing:-.02em}
+.logo.sm{font-size:24px}
+.logo span{color:var(--accent)}
+
+/* Screens */
+.screen{display:none;min-height:100vh;min-height:100dvh}
+.screen.on{display:block}
+
+/* Setup — display gated on .on so the id selector can't override .screen visibility */
+#setup.on{max-width:520px;margin:0 auto;padding:20px 20px 40px;display:flex;flex-direction:column;min-height:100dvh}
+.setupHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
+.dots{display:flex;gap:8px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line);transition:.2s}
+.dots i.on{background:var(--accent);width:22px;border-radius:5px}
+
+.step{display:none;flex-direction:column;gap:14px;flex:1}
+.step.on{display:flex}
+.step h1{font-size:30px;font-weight:800;line-height:1.15;margin:0 0 8px}
+
+.opts{display:flex;flex-direction:column;gap:12px}
+.opts.grid{display:grid;grid-template-columns:repeat(3,1fr)}
+.opt{background:var(--card);border:1.5px solid var(--line);color:var(--text);border-radius:16px;padding:20px;font-size:18px;font-weight:700;text-align:left;transition:.15s}
+.opts.grid .opt{text-align:center;font-size:22px;padding:22px 0}
+.opt:hover{border-color:var(--accent2)}
+.opt.on,.opt:active{border-color:var(--accent);background:#1b2c46}
+.locBtn{text-align:center}
+.or{text-align:center;color:var(--muted);font-weight:600;margin:2px 0}
+
+.inp{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:14px;color:var(--text);font-size:17px;padding:16px;outline:none}
+.inp:focus{border-color:var(--accent)}
+.fieldLbl{color:var(--muted);font-size:13px;font-weight:700;letter-spacing:.04em;margin-top:6px}
+.fieldLbl span{font-weight:500;opacity:.7}
+
+.next{margin-top:auto;background:var(--accent);color:#20140a;border:0;border-radius:16px;padding:17px;font-size:17px;font-weight:800}
+.next:disabled{opacity:.45}
+.next:active{transform:scale(.99)}
+
+/* Result / summary — display gated on .on (same id-specificity fix as #setup) */
+#result.on{max-width:520px;margin:0 auto;padding:20px;min-height:100dvh;display:flex;flex-direction:column}
+.working{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;color:var(--muted)}
+.spinner{width:44px;height:44px;border:4px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.summary{display:flex;flex-direction:column;gap:12px;padding-top:20px}
+.summary h1{font-size:28px;font-weight:800;margin:6px 0 0}
+.summary .sub{color:var(--muted);margin:0}
+.wxDays{display:flex;flex-direction:column;gap:10px;margin:8px 0}
+.wxDay{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.wxDay .day{font-weight:800;min-width:96px}
+.wxDay .badge{margin-left:auto;font-weight:800;font-size:13px;padding:4px 10px;border-radius:999px;background:#20140a;color:var(--accent)}
+.wxDay .badge.warn{background:#2a1520;color:#ff6b8a}
+.wxDay .stat{color:var(--muted);font-size:13px}
+.note{color:var(--muted);font-size:14px;line-height:1.5}
+
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(16px);background:#fff;color:#111;font-weight:700;font-size:14px;padding:12px 18px;border-radius:12px;opacity:0;pointer-events:none;transition:.2s;z-index:100;max-width:88vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
