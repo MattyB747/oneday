@@ -10,7 +10,9 @@ async function go(payload) {
   $('goBtn').disabled = true;
   try {
     const res = await api('/api/trip', { method: 'POST', body: payload });
-    try { sessionStorage.setItem('tempoTrip', res.tripId); } catch (_) {}
+    // Persist both the id AND the resolved location, so a server restart (which
+    // clears in-memory trips) can't strand us — we re-send coords as a fallback.
+    try { sessionStorage.setItem('tempoTrip', res.tripId); sessionStorage.setItem('tempoStay', JSON.stringify(res.stay)); } catch (_) {}
     show('dash');
     await loadDashboard(res.tripId, res.stay);
   } catch (err) {
@@ -36,9 +38,10 @@ export function mountSetup() {
   $('goBtn')?.addEventListener('click', submit);
   $('stayInput')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
 
-  // Resume an existing trip if we have one.
+  // Resume an existing trip if we have one (with the stored location as fallback).
   try {
     const t = sessionStorage.getItem('tempoTrip');
-    if (t) { show('dash'); loadDashboard(t); }
+    const stay = JSON.parse(sessionStorage.getItem('tempoStay') || 'null');
+    if (t && stay) { show('dash'); loadDashboard(t, stay); }
   } catch (_) {}
 }

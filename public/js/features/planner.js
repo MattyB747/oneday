@@ -63,7 +63,11 @@ async function build() {
   $('buildTrippie').disabled = true;
   $('buildTrippie').textContent = 'Optimising…';
   try {
-    const plan = await api('/api/plan', { method: 'POST', body: { tripId, days, basket: [...basket] } });
+    // Include the stored location so a memory-cleared server still has a base.
+    let stay = null; try { stay = JSON.parse(sessionStorage.getItem('tempoStay') || 'null'); } catch (_) {}
+    const body = { tripId, days, basket: [...basket] };
+    if (stay && Number.isFinite(stay.lat)) { body.lat = stay.lat; body.lon = stay.lon; }
+    const plan = await api('/api/plan', { method: 'POST', body });
     renderItinerary(plan);
     show('itinerary');
   } catch (err) {

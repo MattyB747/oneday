@@ -52,11 +52,16 @@ function dayCardHtml(d) {
 }
 
 export async function loadDashboard(tripId, stay) {
+  if (!stay) { try { stay = JSON.parse(sessionStorage.getItem('tempoStay') || 'null'); } catch (_) {} }
   if (stay && $('stayLabel')) $('stayLabel').textContent = stay.label;
   const wrap = $('dayCarousel');
   if (wrap) wrap.innerHTML = '<div class="soon" style="padding:24px">Reading the days…</div>';
+  // Pass lat/lon as a fallback so a restarted (memory-cleared) server still works.
+  const q = new URLSearchParams();
+  if (tripId) q.set('tripId', tripId);
+  if (stay && Number.isFinite(stay.lat)) { q.set('lat', stay.lat); q.set('lon', stay.lon); }
   try {
-    const b = await api('/api/briefing?tripId=' + encodeURIComponent(tripId));
+    const b = await api('/api/briefing?' + q.toString());
     if (wrap) wrap.innerHTML = (b.days || []).map(dayCardHtml).join('');
   } catch (err) {
     if (wrap) wrap.innerHTML = `<div class="soon" style="padding:24px">Couldn't load the briefing: ${esc(err.message)}</div>`;
