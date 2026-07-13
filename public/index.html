@@ -13,14 +13,32 @@
     <div class="setupCard">
       <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Your best day. Every day.</span></div>
       <h1>Discover Cape Town.<br>Perfectly planned.</h1>
-      <p class="tag">Tell us two things — we plan your whole trip using everything happening while you’re here.</p>
-      <label class="qLbl">How many days are you staying?</label>
-      <div class="dayPick" id="dayPick"></div>
+      <p class="tag">Tell us where you’re staying — we’ll show you everything happening this week, then plan your perfect trip.</p>
       <label class="qLbl">Where are you staying?</label>
       <button class="locBtn" id="useLocation">📍 Use my current location</button>
       <div class="or">or</div>
       <input class="inp" id="stayInput" type="text" placeholder="Hotel, suburb or address" autocomplete="off" />
-      <button class="cta" id="goBtn">Build My Trip →</button>
+      <button class="cta" id="goBtn">Show me Cape Town →</button>
+    </div>
+  </section>
+
+  <!-- ===== The 7-Day Everything dashboard (the landing after location) ===== -->
+  <section class="screen" id="week">
+    <div class="topbar">
+      <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Everything happening. So you don’t have to look.</span></div>
+    </div>
+    <div class="weekHead">
+      <h1>Cape Town, the next 7 days.</h1>
+      <p class="tag" id="weekSub">Weather, tides, markets, events and what’s in season — all in one place.</p>
+      <div class="natureNow" id="natureNow" hidden></div>
+    </div>
+    <div class="weekGrid" id="weekGrid"></div>
+    <div class="planBar">
+      <div class="planBarInner">
+        <div class="pbLbl">Love what you see? <b>Plan the whole thing.</b></div>
+        <div class="dayPick" id="dayPick"></div>
+        <button class="cta" id="planBtn">Plan my trip →</button>
+      </div>
     </div>
   </section>
 

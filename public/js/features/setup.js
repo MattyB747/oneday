@@ -1,30 +1,24 @@
-// Setup — two questions: how many days + where are you staying. Then plan the trip.
+// Setup — one question: where are you staying. Then show the 7-day Everything
+// dashboard, from which you spin up an itinerary.
 import { api } from '../core/api.js';
+import { loadWeek } from './week.js';
 import { loadTrip } from './trip.js';
 
 const $ = (id) => document.getElementById(id);
-let days = 5;
 function toast(m) { const t = $('toast'); if (!t) return; t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2400); }
 function show(id) { document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id)); }
 
 async function go(payload) {
-  $('goBtn').disabled = true; $('goBtn').textContent = 'Planning…';
+  $('goBtn').disabled = true; $('goBtn').textContent = 'Loading…';
   try {
     const res = await api('/api/trip', { method: 'POST', body: payload });
-    try { sessionStorage.setItem('odTrip', res.tripId); sessionStorage.setItem('odStay', JSON.stringify(res.stay)); sessionStorage.setItem('odDays', String(days)); } catch (_) {}
-    show('trip');
-    await loadTrip({ tripId: res.tripId, lat: res.stay.lat, lon: res.stay.lon, days });
-  } catch (err) { toast(err.message || 'Could not plan — try again'); }
-  finally { $('goBtn').disabled = false; $('goBtn').textContent = 'Build My Trip →'; }
-}
-
-function renderDays() {
-  $('dayPick').innerHTML = [2, 3, 4, 5, 7].map((n) => `<button class="dayChip${n === days ? ' on' : ''}" data-n="${n}">${n === 7 ? '7+' : n}</button>`).join('');
+    try { sessionStorage.setItem('odTrip', res.tripId); sessionStorage.setItem('odStay', JSON.stringify(res.stay)); } catch (_) {}
+    await loadWeek({ tripId: res.tripId, lat: res.stay.lat, lon: res.stay.lon });
+  } catch (err) { toast(err.message || 'Could not load — try again'); }
+  finally { $('goBtn').disabled = false; $('goBtn').textContent = 'Show me Cape Town →'; }
 }
 
 export function mountSetup() {
-  renderDays();
-  $('dayPick')?.addEventListener('click', (e) => { const b = e.target.closest('.dayChip'); if (!b) return; days = Number(b.dataset.n); renderDays(); });
   $('useLocation')?.addEventListener('click', () => {
     if (!navigator.geolocation) { toast('Location unavailable — type an area'); return; }
     $('useLocation').textContent = '📍 Locating…';
@@ -38,8 +32,9 @@ export function mountSetup() {
   $('goBtn')?.addEventListener('click', submit);
   $('stayInput')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
 
+  // Returning within the session — jump back to the dashboard.
   try {
-    const t = sessionStorage.getItem('odTrip'); const stay = JSON.parse(sessionStorage.getItem('odStay') || 'null'); const dd = Number(sessionStorage.getItem('odDays')) || 5;
-    if (t && stay) { days = dd; show('trip'); loadTrip({ tripId: t, lat: stay.lat, lon: stay.lon, days: dd }); }
+    const t = sessionStorage.getItem('odTrip'); const stay = JSON.parse(sessionStorage.getItem('odStay') || 'null');
+    if (t && stay) loadWeek({ tripId: t, lat: stay.lat, lon: stay.lon });
   } catch (_) {}
 }

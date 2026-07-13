@@ -160,3 +160,32 @@ button{font-family:inherit;cursor:pointer}
   .scoreBig{font-size:72px}.heroText h1{font-size:26px}
 }
 @media(max-width:560px){.planRow{grid-template-columns:1fr}.whyRow{grid-template-columns:1fr}}
+
+/* ===== 7-Day Everything dashboard ===== */
+#week{padding-bottom:120px}
+.weekHead{max-width:1200px;margin:0 auto;padding:26px 22px 8px}
+.weekHead h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:0 0 6px}
+.natureNow{margin-top:12px;background:#e3f5f3;border:1px solid #c7ebe7;color:var(--teal-d);border-radius:12px;padding:11px 14px;font-size:14px}
+.weekGrid{max-width:1200px;margin:0 auto;padding:14px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.wLoading{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px}
+.wCard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(15,36,48,.04);display:flex;flex-direction:column;gap:10px}
+.wTop{display:flex;align-items:center;justify-content:space-between}
+.wDate{font-weight:800;font-size:15px}
+.wWx{display:flex;align-items:center;gap:6px}
+.wIco{font-size:22px}.wTemp{font-weight:800;font-size:20px}
+.wMeta{color:var(--muted);font-size:13px;margin-top:-2px}
+.wEvents{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.wEvent{display:flex;gap:9px;align-items:flex-start}
+.wEvent .ec{font-size:16px;line-height:1.2}
+.wEvent b{display:block;font-size:14px;font-weight:700}
+.wEvent small{color:var(--muted);font-size:12px}
+.wQuiet{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:10px;font-style:italic}
+.wPills{display:flex;flex-wrap:wrap;gap:6px}
+.wPill{background:#eef6f9;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;color:var(--ink2)}
+.wPill.warn{background:#fff3e8;border-color:#f4dcc2;color:var(--warn)}
+.planBar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);backdrop-filter:saturate(1.4) blur(10px);border-top:1px solid var(--line);z-index:10}
+.planBarInner{max-width:1200px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.pbLbl{font-size:15px;color:var(--ink2)}.pbLbl b{color:var(--ink)}
+.planBar .dayPick{display:flex;gap:8px;margin:0}
+.planBar .cta{padding:12px 22px;margin-left:auto}
+@media(max-width:640px){.planBarInner{gap:10px}.pbLbl{flex:1 0 100%}.planBar .cta{margin-left:0}}

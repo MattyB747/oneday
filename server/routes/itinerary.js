@@ -5,6 +5,7 @@
 const express = require('express');
 const { getTrip } = require('../services/trip');
 const itinerary = require('../services/itinerary');
+const week = require('../services/week');
 
 const router = express.Router();
 
@@ -15,6 +16,17 @@ function baseFrom(req) {
   if (tripId) { const t = getTrip(tripId); if (t && t.stay) { lat = t.stay.lat; lon = t.stay.lon; } }
   return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
 }
+
+// The 7-day "Everything" dashboard (the landing).
+router.get('/api/week', async (req, res) => {
+  try {
+    const base = baseFrom(req);
+    if (!base) return res.status(400).json({ error: 'Location required' });
+    res.json(await week.build(base, 7));
+  } catch (err) {
+    res.status(502).json({ error: (err && err.message) || 'Could not load the week' });
+  }
+});
 
 router.get('/api/itinerary', async (req, res) => {
   try {
