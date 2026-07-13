@@ -86,16 +86,16 @@ async function build(base, nDays) {
       usedSpots.add(ranked[0].id);
       const extra = [];
       if (ranked[0].id === 'table-mountain') extra.push(`On day ${di + 1} — the calmest morning of your trip (${Math.round(day.weather.maxWindKmh)} km/h vs up to ${Math.round(maxWind)} later), when the cableway is most reliable.`);
-      extra.push(`Grouped into your ${region.name} day so you’re not criss-crossing the city.`);
+      extra.push(`Do all of ${region.name} in one day — no criss-crossing the city.`);
       slots.push(await activityStop(ranked[0].id, '09:30', base, day, extra));
     }
     // Second activity (11:30).
-    if (ranked[1]) { usedSpots.add(ranked[1].id); slots.push(await activityStop(ranked[1].id, '11:30', base, day, [`Close by in the ${region.name}.`])); }
+    if (ranked[1]) { usedSpots.add(ranked[1].id); slots.push(await activityStop(ranked[1].id, '11:30', base, day, [`Close by, still in ${region.name}.`])); }
     // Lunch (13:00) near the region.
     const lunch = restaurants.byRegion(region.key, 'lunch').find((r) => !usedRest.has(r.id));
     if (lunch) { usedRest.add(lunch.id); slots.push(mealStop(lunch, '13:00', 'lunch', region.name)); }
     // Afternoon activity (15:00).
-    if (ranked[2]) { usedSpots.add(ranked[2].id); slots.push(await activityStop(ranked[2].id, '15:00', base, day, [`Rounds out your day in the ${region.name}.`])); }
+    if (ranked[2]) { usedSpots.add(ranked[2].id); slots.push(await activityStop(ranked[2].id, '15:00', base, day, [`Rounds out your ${region.name} day.`])); }
     // Sunset spot (if the region has one).
     const sunsetId = (region.sunset || []).map(byId).find((a) => a && !usedSpots.has(a.id));
     if (sunsetId) { usedSpots.add(sunsetId.id); slots.push(await activityStop(sunsetId.id, fmt(day.weather.sunset) || '18:15', base, day, [`Timed for sunset — the perfect end to the day.`])); }
