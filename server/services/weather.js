@@ -26,7 +26,7 @@ async function forecast(lat, lon, days = 5) {
     latitude: String(lat), longitude: String(lon), timezone: 'auto',
     forecast_days: String(Math.min(Math.max(days, 1), 16)),
     hourly: 'temperature_2m,precipitation_probability,precipitation,cloud_cover,wind_speed_10m',
-    daily: 'sunrise,sunset,temperature_2m_max,precipitation_probability_max,wind_speed_10m_max',
+    daily: 'sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,uv_index_max',
   });
   const data = await getJson('https://api.open-meteo.com/v1/forecast?' + params.toString());
 
@@ -52,8 +52,10 @@ async function forecast(lat, lon, days = 5) {
     sunrise: d.sunrise ? d.sunrise[i] : null,
     sunset: d.sunset ? d.sunset[i] : null,
     maxTempC: d.temperature_2m_max ? d.temperature_2m_max[i] : null,
+    minTempC: d.temperature_2m_min ? d.temperature_2m_min[i] : null,
     maxRainProb: d.precipitation_probability_max ? d.precipitation_probability_max[i] : null,
     maxWindKmh: d.wind_speed_10m_max ? d.wind_speed_10m_max[i] : null,
+    uvMax: d.uv_index_max ? d.uv_index_max[i] : null,
     hours: byDate.get(date) || [],
   }));
 
