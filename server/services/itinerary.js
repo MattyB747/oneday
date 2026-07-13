@@ -51,7 +51,7 @@ function mealStop(rest, hhmm, mealType, region) {
   return {
     kind: 'meal', region, mealType, id: rest.id, hhmm,
     attraction: { id: rest.id, name: rest.name, area: rest.cuisine },
-    why: [`${mealType === 'lunch' ? 'Lunch' : 'Dinner'} in the ${region} today — ${rest.cuisine.toLowerCase()}, no detour needed.`],
+    why: [`${mealType === 'lunch' ? 'Lunch' : 'Dinner'} right by your ${mealType === 'lunch' ? 'afternoon' : 'evening'} stop — ${rest.cuisine.toLowerCase()}, no detour needed.`],
     details: { cost: rest.priceText, wear: null, know: rest.note },
     bookUrl: bookRest(rest.name), image: null,
   };
