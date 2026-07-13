@@ -36,6 +36,32 @@
     </div>
   </section>
 
+  <!-- ===== Plan a Trippie (basket picker) ===== -->
+  <section class="screen" id="planner">
+    <header class="dashHead">
+      <button class="backBtn" id="planBack" type="button">‹</button>
+      <div class="brandRow"><span class="logo sm">Plan a Trippie</span></div>
+    </header>
+    <div class="planScroll">
+      <h3 class="pLbl">How many days?</h3>
+      <div class="daysPick" id="daysPick"></div>
+      <h3 class="pLbl">What do you want to do? <span id="basketCount">0 chosen</span></h3>
+      <div class="libGrid" id="libGrid"></div>
+    </div>
+    <div class="planBar">
+      <button class="cta" id="buildTrippie" disabled>Build my Trippie</button>
+    </div>
+  </section>
+
+  <!-- ===== Itinerary (the built Trippie) ===== -->
+  <section class="screen" id="itinerary">
+    <header class="dashHead">
+      <button class="backBtn" id="itinBack" type="button">‹</button>
+      <div class="brandRow"><span class="logo sm">Your Trippie</span></div>
+    </header>
+    <div class="itinScroll" id="itinScroll"></div>
+  </section>
+
   <div id="toast"></div>
   <script type="module" src="/js/app.js"></script>
 </body>

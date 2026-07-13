@@ -25,6 +25,7 @@ app.get('/api/weather', async (_req, res) => {
 
 // Trip setup + optimisation routes.
 app.use('/', require('./routes/trip'));
+app.use('/', require('./routes/plan'));
 
 app.use(express.static(PUBLIC_DIR, { index: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 app.get('/', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));

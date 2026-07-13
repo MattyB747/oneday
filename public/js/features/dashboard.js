@@ -3,6 +3,7 @@
 // cautions). Signals that aren't wired yet show a subtle "coming soon" line so the
 // framework is visible and honest.
 import { api } from '../core/api.js';
+import { ic } from '../core/icons.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -45,7 +46,7 @@ function dayCardHtml(d) {
       <div class="d">${esc(d.weekday)}<small>${esc(d.label)}</small></div>
       <div class="wxBadge"><div class="t">${Math.round(w.maxTempC)}°</div><div class="s">${esc(w.summary || '')}</div></div>
     </div>
-    <div class="wxRow"><span>💨 wind <b>${Math.round(w.maxWindKmh)}</b> km/h</span><span>☔ rain <b>${w.rainProb}%</b></span>${w.sunrise ? `<span>🌅 <b>${fmtTime(w.sunrise)}</b></span>` : ''}${w.sunset ? `<span>🌇 <b>${fmtTime(w.sunset)}</b></span>` : ''}</div>
+    <div class="wxRow"><span>${ic('wind')} wind <b>${Math.round(w.maxWindKmh)}</b> km/h</span><span>${ic('rain')} rain <b>${w.rainProb}%</b></span>${w.sunrise ? `<span>${ic('sunrise')} <b>${fmtTime(w.sunrise)}</b></span>` : ''}${w.sunset ? `<span>${ic('sunset')} <b>${fmtTime(w.sunset)}</b></span>` : ''}</div>
     ${sec.join('')}
   </article>`;
 }
@@ -62,8 +63,4 @@ export async function loadDashboard(tripId, stay) {
   }
 }
 
-export function mountDashboard() {
-  $('planBtn')?.addEventListener('click', () => {
-    const t = $('toast'); if (t) { t.textContent = 'Plan a Trippie — building next ✦'; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2200); }
-  });
-}
+export function mountDashboard() { /* dashboard has no extra wiring yet; planner owns the Plan button */ }
