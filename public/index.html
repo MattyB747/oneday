@@ -8,66 +8,31 @@
   <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
-  <!-- ===== Setup (4 questions) ===== -->
+  <!-- ===== Setup — one question ===== -->
   <section class="screen on" id="setup">
-    <header class="setupHead">
-      <div class="logo sm">Tem<span>po</span></div>
-      <div class="dots" id="dots"></div>
-    </header>
-
-    <div class="step on" data-step="0">
-      <h1>Who's going?</h1>
-      <div class="opts" id="q-people">
-        <button class="opt" data-val="1">Just me</button>
-        <button class="opt" data-val="2">Two of us</button>
-        <button class="opt" data-val="family">Family</button>
-        <button class="opt" data-val="group">Group</button>
-      </div>
-    </div>
-
-    <div class="step" data-step="1">
-      <h1>How many days in Cape Town?</h1>
-      <div class="opts grid" id="q-days">
-        <button class="opt" data-val="1">1</button>
-        <button class="opt" data-val="2">2</button>
-        <button class="opt" data-val="3">3</button>
-        <button class="opt" data-val="4">4</button>
-        <button class="opt" data-val="5">5</button>
-        <button class="opt" data-val="7">7+</button>
-      </div>
-    </div>
-
-    <div class="step" data-step="2">
+    <div class="setupCard">
+      <div class="logo">Tem<span>po</span></div>
+      <p class="tagline">Cape Town — what's on, at exactly the right time, for you.</p>
       <h1>Where are you staying?</h1>
-      <button class="opt locBtn" id="useLocation">📍 Use my current location</button>
+      <button class="locBtn" id="useLocation">📍 Use my current location</button>
       <div class="or">or</div>
       <input class="inp" id="stayInput" type="text" placeholder="Hotel, suburb or address" autocomplete="off" />
-      <button class="next" id="stayNext">Continue</button>
-    </div>
-
-    <div class="step" data-step="3">
-      <h1>When do you arrive?</h1>
-      <label class="fieldLbl">Date</label>
-      <input class="inp" id="arriveDate" type="date" />
-      <label class="fieldLbl">Arrival time <span>(optional)</span></label>
-      <input class="inp" id="arriveTime" type="time" />
-      <button class="next" id="buildBtn">Plan my trip →</button>
+      <button class="cta" id="goBtn">Show me Cape Town →</button>
     </div>
   </section>
 
-  <!-- ===== Working / result summary ===== -->
-  <section class="screen" id="result">
-    <div class="working" id="working">
-      <div class="spinner"></div>
-      <p id="workingMsg">Reading the weather, tides and what's on…</p>
-    </div>
-    <div class="summary" id="summary" hidden>
-      <div class="logo sm">Tem<span>po</span></div>
-      <h1 id="summaryTitle">Here's your Cape Town</h1>
-      <p class="sub" id="stayLine"></p>
-      <div class="wxDays" id="wxDays"></div>
-      <p class="note">Live weather now. Next: swipe a few places you love and I'll build your day-by-day plan.</p>
-      <button class="next" id="toDiscover" disabled>Start discovering (next step)</button>
+  <!-- ===== Dashboard — rolling daily briefing ===== -->
+  <section class="screen" id="dash">
+    <header class="dashHead">
+      <div class="brandRow"><span class="logo sm">Tem<span>po</span></span></div>
+      <div class="stay" id="stayLabel">Cape Town</div>
+    </header>
+
+    <div class="daysBar"><h2>Your days</h2></div>
+    <div class="carousel" id="dayCarousel"></div>
+
+    <div class="planBar">
+      <button class="cta" id="planBtn">✦ Plan a Trippie</button>
     </div>
   </section>
 

@@ -1,5 +1,32 @@
 # Tempo — AI Destination Optimiser
 
+## Refined model (v1.1, 2026-07-13) — supersedes the setup/discovery flow below
+Two layers:
+
+**Layer 1 — Daily Briefing (dashboard).** Setup = ONE question: *where are you
+staying* (or use my location). No people count, no day count. Then land in a
+dashboard = a swipeable **card per day** (like Vapor's profile carousel), showing
+a rolling ~7 days. Each day card briefs that date: weather · tides · sunrise/
+sunset · what's on (events/markets/festivals) · disruptions (loadshedding,
+roadworks) · cautions/things to know · in-season nudges (whale season → whales,
+flower season → West Coast). Immediate value, zero planning.
+
+**Layer 2 — "Plan a Trippie" (optimiser).** The app is **Tempo**; a plan you build
+is **a Trippie**. Tap Plan a Trippie → a LIBRARY of activity types (mountain,
+wine, hike, beach, whale trip, red bus…) you **swipe into a basket** + pick dates
+(e.g. 3 days). Tempo then schedules each chosen element into its **optimal time +
+place** using CONSTRAINTS.
+
+**The constraint-scheduling is the whole product.** Each activity is anchored to
+its best window, then the day is built around the anchors like a puzzle. Flagship
+example: a beach walk = low tide + avoid the Camps Bay traffic-peak clash +
+closest to your base → "Noordhoek at 2pm," and the rest of the day fits around it.
+Anchors: tide windows (beach walks/tidal pools), low-wind mornings (mountain),
+traffic avoidance, proximity to accommodation, specials/opening hours.
+→ **Tides are now first-class data** (the demo depends on tide timing).
+
+The sections below are the original v1.0 brief (kept for reference).
+
 ## Vision
 Tempo is an AI-powered destination optimiser that creates and continuously
 improves the perfect Cape Town itinerary. Not a travel guide — an **optimisation
