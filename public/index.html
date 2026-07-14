@@ -29,18 +29,18 @@
     </div>
     <div class="galHead">
       <h1>What’s on in Cape Town.</h1>
-      <p class="tag">The next 7 days. Tap <b>+</b> on anything that appeals — we weave your picks into the perfect plan, on the right day and time, and tell you exactly why.</p>
+      <p class="tag">The next 7 days. Tap <b>+</b> on anything that appeals — it drops into your plan below. Then we weave your picks together, on the right day and time, and tell you why.</p>
       <div class="natureNow" id="natureNow" hidden></div>
-      <div class="galFilters" id="galFilters"></div>
     </div>
-    <div class="galleryGrid" id="galleryGrid"><div class="wLoading">Reading what’s on across Cape Town…</div></div>
+    <div class="galRows" id="galRows"><div class="wLoading">Reading what’s on across Cape Town…</div></div>
 
-    <!-- SECTION 2 entry: the planner tray (sticky) -->
+    <!-- SECTION 2 entry: the fixed bottom carousel your picks drop into -->
     <div class="planTray" id="planTray" hidden>
-      <div class="ptInner">
-        <div class="ptCount"><b id="ptNum">0</b> <span>in your plan</span></div>
+      <div class="ptTop">
+        <span class="ptLbl">Your plan · <b id="ptNum">0</b></span>
         <button class="cta" id="weaveBtn">Weave my plan →</button>
       </div>
+      <div class="ptRail" id="ptRail"></div>
     </div>
   </section>
 

@@ -19,10 +19,12 @@ function get(url) {
   });
 }
 
+// Use the thumbnail exactly as Wikipedia returns it (~320px, always a valid URL).
+// Rewriting the size token 400s on Wikimedia, so don't touch it.
 async function imageFor(title) {
   if (!title) return null;
   const d = await get(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`);
-  return (d && ((d.originalimage && d.originalimage.source) || (d.thumbnail && d.thumbnail.source))) || null;
+  return (d && d.thumbnail && d.thumbnail.source) || (d && d.originalimage && d.originalimage.source) || null;
 }
 
 async function main() {
