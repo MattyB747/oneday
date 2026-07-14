@@ -58,7 +58,7 @@ router.post('/api/weave', async (req, res) => {
     const base = baseFrom(req);
     if (!base) return res.status(400).json({ error: 'Location required' });
     const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
-    res.json(await gallery.weave(base, ids));
+    res.json(await gallery.weave(base, ids, req.body && req.body.days));
   } catch (err) {
     res.status(502).json({ error: (err && err.message) || 'Could not weave your plan' });
   }

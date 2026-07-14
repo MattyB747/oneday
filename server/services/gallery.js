@@ -12,6 +12,7 @@ const events = require('../data/events');
 const { attractions, byId } = require('../data/attractions');
 const { detailsFor } = require('../data/details');
 const restaurants = require('../data/restaurants');
+const { distanceKm } = require('../lib/geo');
 let IMAGES = {};
 try { IMAGES = require('../data/images.json'); } catch (_) { IMAGES = {}; }
 
@@ -147,39 +148,76 @@ const TIME_RANK = { sunrise: 0, morning: 1, any: 2, afternoon: 3, sunset: 4, eve
 const ACT_CLOCK = ['09:00', '10:30', '14:00', '16:00', '17:30', '19:00']; // lunch slots in separately
 const AREA_TO_REGION = { 'City Bowl': 'city', 'Atlantic Seaboard': 'atlantic', 'False Bay': 'falsebay', 'Cape Peninsula': 'peninsula', 'Constantia': 'constantia', 'Southern Suburbs': 'constantia', 'Winelands': 'winelands', 'Woodstock': 'city' };
 const REGION_NAME = { city: 'the City Bowl', atlantic: 'the Atlantic Seaboard', falsebay: 'False Bay', peninsula: 'the Cape Peninsula', constantia: 'Constantia', winelands: 'the Winelands' };
+// Encoded Cape Town commute knowledge — when to leave to beat the afternoon jam
+// (generic patterns, not a live traffic feed; real-time routing comes with a key).
+const COMMUTE = {
+  city: 'The city bowl clogs on the N1/N2 from ~16:00 — you’re central, so no rush, but avoid driving out at 5pm.',
+  atlantic: 'Victoria Rd along the Atlantic backs up 16:00–18:00 — aim to be leaving Camps Bay/Clifton by ~16:00.',
+  constantia: 'The M3 through the southern suburbs jams 16:00–18:00 — leave Constantia by ~16:00 to keep it smooth.',
+  falsebay: 'It’s ~40 min back up the M3/coast — leave False Bay by ~16:00 before the afternoon build-up.',
+  peninsula: 'It’s a long, winding drive home from the Peninsula — start heading back by ~16:00 while there’s light.',
+  winelands: 'The N1/N2 back from the Winelands is heavy 16:00–18:00 — leave by ~15:30, and sort a designated driver.',
+};
 
-async function weave(base, ids) {
+async function weave(base, ids, nDays) {
   const days = await sevenDays(base);
   const chosen = (ids || []).map((id) => byId(id)).filter(Boolean); // places (v1)
-  if (!chosen.length || !days.length) return { days: [] };
+  if (!chosen.length || !days.length) return { days: [], dropped: [] };
+  const D = Math.min(Math.max(Number(nDays) || 3, 1), 7);
+  const chosenIds = new Set(chosen.map((a) => a.id));
 
-  // 1) Group picks by real region.
-  const groups = {}; // region -> [places]
+  // 1) Group picks by region; rank each region by weather-fit + scenery.
+  const groups = {};
   chosen.forEach((a) => { const r = AREA_TO_REGION[a.area] || 'city'; (groups[r] = groups[r] || []).push(a); });
+  const regionInfo = Object.entries(groups).map(([region, places]) => {
+    let bestI = 0, bestScore = -1e9;
+    days.forEach((d, i) => { const sc = places.reduce((s, a) => s + scorePlaceDay(a, d), 0) / places.length; if (sc > bestScore) { bestScore = sc; bestI = i; } });
+    const scenic = Math.max(...places.map((a) => a.scenic || 0));
+    return { region, places, bestI, rank: bestScore + scenic * 30 };
+  }).sort((a, b) => b.rank - a.rank);
 
-  // 2) Assign each region its best day (greedy: best region-day score first, one region/day).
-  const pairs = [];
-  Object.entries(groups).forEach(([region, places]) => {
-    days.forEach((d, i) => { const score = places.reduce((sum, a) => sum + scorePlaceDay(a, d), 0) / places.length; pairs.push({ region, i, score }); });
+  // 2) Only D areas fit (one per day). Keep the top D; drop the rest, with reasons.
+  const dropped = [];
+  const kept = []; const dayTaken = new Set();
+  regionInfo.forEach((ri, idx) => {
+    if (idx >= D) {
+      ri.places.forEach((a) => dropped.push({ id: a.id, title: a.name, area: REGION_NAME[ri.region],
+        reason: `your ${D} day${D > 1 ? 's' : ''} fit ${D} area${D > 1 ? 's' : ''} — ${REGION_NAME[ri.region]} ranked below the areas we kept on scenery and this week's weather.` }));
+      return;
+    }
+    let di = ri.bestI; if (dayTaken.has(di)) { for (let k = 0; k < days.length; k++) if (!dayTaken.has(k)) { di = k; break; } }
+    dayTaken.add(di); kept.push({ ...ri, di });
   });
-  pairs.sort((a, b) => b.score - a.score);
-  const regionDay = {}, dayTaken = new Set();
-  for (const p of pairs) { if (regionDay[p.region] != null || dayTaken.has(p.i)) continue; regionDay[p.region] = p.i; dayTaken.add(p.i); }
+  kept.sort((a, b) => a.di - b.di);
 
-  // 3) Build each region's day: order by time-of-day, weave a lunch in.
-  const out = Object.entries(regionDay).map(([region, di]) => {
-    const day = days[di];
-    const ordered = groups[region].slice().sort((a, b) => (TIME_RANK[a.best] ?? 2) - (TIME_RANK[b.best] ?? 2));
+  // 3) Build each kept day: sequence by time, cap ~4 activities, weave lunch, add
+  //    a traffic advisory + a nearby "you're here, also worth it" suggestion.
+  const outDays = kept.map((k) => {
+    const day = days[k.di];
+    const ordered = k.places.slice().sort((a, b) => (TIME_RANK[a.best] ?? 2) - (TIME_RANK[b.best] ?? 2));
+    const capped = ordered.slice(0, 4);
+    ordered.slice(4).forEach((a) => dropped.push({ id: a.id, title: a.name, area: REGION_NAME[k.region], reason: `only so much fits in a day — this ranked lowest of your ${REGION_NAME[k.region]} picks.` }));
     const stops = [];
-    ordered.forEach((a, idx) => {
-      if (idx === 2) { const l = restaurants.byRegion(region, 'lunch')[0]; if (l) stops.push({ time: '12:30', id: l.id, name: l.name, area: l.cuisine, meal: true, cost: l.priceText, why: `Lunch in ${REGION_NAME[region]} — right by your other stops.` }); }
+    capped.forEach((a, idx) => {
+      if (idx === 2) { const l = restaurants.byRegion(k.region, 'lunch')[0]; if (l) stops.push({ time: '12:30', name: l.name, area: l.cuisine, meal: true, cost: l.priceText, why: `Lunch in ${REGION_NAME[k.region]} — right by your stops.` }); }
       stops.push({ time: ACT_CLOCK[Math.min(stops.filter((s) => !s.meal).length, ACT_CLOCK.length - 1)], id: a.id, name: a.name, area: a.area, why: whyForPlace(a, day, days), cost: (detailsFor(a.id).cost) || null, image: IMAGES[a.id] || null });
     });
-    return { date: day.date, dayIndex: di, label: day.label, hi: day.hi, windKmh: day.windKmh,
-      region: REGION_NAME[region], why: `${REGION_NAME[region]} on ${day.label.split(',')[0]} — ${day.windKmh <= 15 ? 'calm and clear' : 'the best-matched day'} for your picks here.`, stops };
-  }).sort((a, b) => a.dayIndex - b.dayIndex);
+    // Nearby gem: nearest place in the same area they didn't pick.
+    const anchor = capped[0];
+    const nearby = attractions
+      .filter((a) => (AREA_TO_REGION[a.area] || 'city') === k.region && !chosenIds.has(a.id))
+      .map((a) => ({ a, d: distanceKm(anchor, a) }))
+      .sort((x, y) => x.d - y.d)[0];
+    return {
+      date: day.date, dayIndex: k.di, label: day.label, region: REGION_NAME[k.region], hi: day.hi, windKmh: day.windKmh,
+      why: `${REGION_NAME[k.region]} on ${day.label.split(',')[0]} — ${day.windKmh <= 15 ? 'calm and clear' : 'the best-matched day'} for your picks here.`,
+      traffic: COMMUTE[k.region] || null,
+      nearby: nearby ? { id: nearby.a.id, name: nearby.a.name, km: Math.round(nearby.d), why: nearby.a.blurb, image: IMAGES[nearby.a.id] || null, cost: (detailsFor(nearby.a.id).cost) || null } : null,
+      stops,
+    };
+  });
 
-  return { days: out };
+  return { days: outDays, dropped, summary: { picked: chosen.length, days: D, areas: regionInfo.length, fits: regionInfo.length <= D } };
 }
 
 module.exports = { build, weave };

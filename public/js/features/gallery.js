@@ -8,6 +8,7 @@ const CAPE_TOWN = { lat: -33.9249, lon: 18.4241 };
 let ctx = null;
 let items = [];
 let featured = [];
+let tripDays = 3;
 const chosen = new Set();
 const byId = new Map();
 
@@ -89,17 +90,19 @@ const VIBE_BUCKETS = [
 ];
 
 function renderRows() {
+  const avail = (list) => list.filter((i) => !chosen.has(i.id)); // hide what's already added
   if (mode === 'area') {
     const groups = {};
-    [...items].sort((a, b) => (b.scenic || 0) - (a.scenic || 0)).forEach((it) => { const r = it.region || 'city'; (groups[r] = groups[r] || []).push(it); });
-    $('galRows').innerHTML = rowsFrom(groups, REGION_ORDER, (k) => REGION[k] || { label: k, icon: '📍' });
+    avail([...items].sort((a, b) => (b.scenic || 0) - (a.scenic || 0))).forEach((it) => { const r = it.region || 'city'; (groups[r] = groups[r] || []).push(it); });
+    $('galRows').innerHTML = rowsFrom(groups, REGION_ORDER, (k) => REGION[k] || { label: k, icon: '📍' }) || '<div class="wLoading">All added — weave your plan below.</div>';
     return;
   }
   // By vibe: Today's suggestions → editorial buckets → what's on → honest stubs.
-  const places = items.filter((i) => i.kind === 'place');
-  const events = items.filter((i) => i.kind === 'event');
+  const places = avail(items.filter((i) => i.kind === 'place'));
+  const events = avail(items.filter((i) => i.kind === 'event'));
   const rows = [];
-  if (featured.length) rows.push(rowHtml('✨', 'Today’s suggestions', featured, ' featured'));
+  const feat = avail(featured);
+  if (feat.length) rows.push(rowHtml('✨', 'Today’s suggestions', feat, ' featured'));
   VIBE_BUCKETS.forEach(([k, ic, lb]) => { const list = places.filter((p) => (p.buckets || []).includes(k)); if (list.length) rows.push(rowHtml(ic, lb, list)); });
   if (events.length) rows.push(rowHtml('🎟️', 'What’s on this week', events));
   rows.push(stubRow('🧭', 'Off the beaten track', 'Hidden gems & lesser-known spots — coming with the local place harvest.'));
@@ -120,15 +123,22 @@ function renderTray() {
   $('ptNum').textContent = picks.length;
   $('planTray').hidden = picks.length === 0;
   $('ptRail').innerHTML = picks.map(trayItem).join('');
+  renderDayPick();
+}
+function renderDayPick() {
+  const el = $('ptDayPick'); if (!el) return;
+  el.innerHTML = [2, 3, 4, 5, 6, 7].map((n) => `<button class="ptDay${n === tripDays ? ' on' : ''}" data-n="${n}">${n}</button>`).join('');
 }
 
 function setChosen(id, on) {
   if (on) chosen.add(id); else chosen.delete(id);
-  // reflect on any visible rail card
-  document.querySelectorAll(`.rCard[data-id="${CSS.escape(id)}"]`).forEach((card) => {
-    card.classList.toggle('added', on);
-    const b = card.querySelector('.rAdd'); if (b) b.textContent = on ? '✓' : '+';
-  });
+  if (on) {
+    // Added → take it out of the gallery (no point offering what you already have).
+    document.querySelectorAll(`.rCard[data-id="${CSS.escape(id)}"]`).forEach((c) => c.remove());
+  } else if (mode !== 'map') {
+    renderRows(); // removed from the plan → bring it back into the gallery
+  }
+  if (map) buildMarkers();
   renderTray();
 }
 
@@ -153,28 +163,45 @@ async function weave() {
   $('weaveBtn').disabled = true; $('weaveBtn').textContent = 'Weaving…';
   try {
     const base = ctx.tripId ? { tripId: ctx.tripId } : { lat: ctx.lat, lon: ctx.lon };
-    const r = await api('/api/weave', { method: 'POST', body: { ...base, ids: placeIds } });
-    renderWoven(r.days || []);
+    const r = await api('/api/weave', { method: 'POST', body: { ...base, ids: placeIds, days: tripDays } });
+    renderWoven(r);
     show('woven'); window.scrollTo(0, 0);
   } catch (err) { toast(err.message || 'Could not weave'); }
   finally { $('weaveBtn').disabled = false; $('weaveBtn').textContent = 'Weave my plan →'; }
 }
 
-function renderWoven(days) {
+const stopHtml = (s) => `
+  <div class="dStop">
+    <span class="dt">${esc(s.time)}</span>
+    <div class="dStopBody">
+      <b>${esc(s.name)}</b>${s.area ? ` <small>${esc(s.area)}</small>` : ''}${s.meal ? '<span class="dMeal">🍴 lunch</span>' : ''}
+      ${s.why ? `<div class="dw">${esc(s.why)}</div>` : ''}
+      ${s.cost ? `<span class="dc">${esc(s.cost)}</span>` : ''}
+    </div>
+  </div>`;
+
+function renderWoven(res) {
+  const days = (res && res.days) || [];
+  const dropped = (res && res.dropped) || [];
   if (!days.length) { $('wovenDays').innerHTML = '<div class="wLoading">Add some places first.</div>'; return; }
-  $('wovenDays').innerHTML = days.map((d) => `
+  const banner = dropped.length ? `
+    <div class="dropBanner">
+      <div class="dropHead">⚠︎ ${dropped.length} pick${dropped.length > 1 ? 's' : ''} didn’t fit your ${tripDays}-day trip — here’s why:</div>
+      ${dropped.map((d) => `<div class="dropItem"><b>${esc(d.title)}</b> <span>${esc(d.reason)}</span></div>`).join('')}
+      <div class="dropTip">Add a day, or drop something else — then weave again.</div>
+    </div>` : '';
+  $('wovenDays').innerHTML = banner + days.map((d) => `
     <div class="wvDay">
       <div class="wvHead"><div class="wvDate">${esc(d.label)}</div><div class="wvRegion">${esc(d.region)}</div></div>
       <div class="wvWhy">💡 ${esc(d.why)}</div>
-      <div class="dPlan">${d.stops.map((s) => `
-        <div class="dStop">
-          <span class="dt">${esc(s.time)}</span>
-          <div class="dStopBody">
-            <b>${esc(s.name)}</b>${s.area ? ` <small>${esc(s.area)}</small>` : ''}${s.meal ? '<span class="dMeal">🍴 lunch</span>' : ''}
-            ${s.why ? `<div class="dw">${esc(s.why)}</div>` : ''}
-            ${s.cost ? `<span class="dc">${esc(s.cost)}</span>` : ''}
-          </div>
-        </div>`).join('')}</div>
+      <div class="dPlan">${d.stops.map(stopHtml).join('')}</div>
+      ${d.traffic ? `<div class="wvTraffic">🚗 ${esc(d.traffic)}</div>` : ''}
+      ${d.nearby ? `
+        <div class="wvNearby">
+          ${d.nearby.image ? `<div class="nbImg" style="background-image:url('${esc(d.nearby.image)}')"></div>` : '<div class="nbImg nbTile">📍</div>'}
+          <div class="nbBody"><div class="nbLbl">You’re right here — also worth it${d.nearby.km != null ? ` (${d.nearby.km} km)` : ''}</div><b>${esc(d.nearby.name)}</b><div class="nbWhy">${esc(d.nearby.why)}</div></div>
+          <button class="nbAdd" data-id="${esc(d.nearby.id)}" type="button">+ Add</button>
+        </div>` : ''}
     </div>`).join('');
 }
 
@@ -193,7 +220,10 @@ function buildMarkers() {
   if (!map || !window.L) return;
   markers.forEach((m) => m.remove()); markers = [];
   items.filter((it) => it.kind === 'place' && it.lat && it.lon).forEach((it) => {
-    const m = L.circleMarker([it.lat, it.lon], { radius: 9, color: '#fff', weight: 2, fillColor: catOf(it.category).tint, fillOpacity: 1 })
+    const sel = chosen.has(it.id);
+    const m = L.circleMarker([it.lat, it.lon], sel
+      ? { radius: 13, color: '#0e8c85', weight: 4, fillColor: '#12a8a0', fillOpacity: 1 }   // selected — big teal pin
+      : { radius: 9, color: '#fff', weight: 2, fillColor: catOf(it.category).tint, fillOpacity: 1 })
       .bindPopup(popupHtml(it), { minWidth: 210 });
     m.addTo(map); markers.push(m);
   });
@@ -239,6 +269,10 @@ export function mountGallery() {
   });
   $('weaveBtn')?.addEventListener('click', weave);
   $('wovenBack')?.addEventListener('click', () => show('week'));
+  // Day-count selector.
+  $('ptDayPick')?.addEventListener('click', (e) => { const b = e.target.closest('.ptDay'); if (!b) return; tripDays = Number(b.dataset.n); renderDayPick(); });
+  // "Add" a nearby gem straight from the plan → re-weave with it included.
+  $('wovenDays')?.addEventListener('click', (e) => { const b = e.target.closest('.nbAdd'); if (!b) return; setChosen(b.dataset.id, true); weave(); });
 
   let boot = { ...CAPE_TOWN };
   try {
