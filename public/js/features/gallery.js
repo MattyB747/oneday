@@ -7,6 +7,7 @@ const $ = (id) => document.getElementById(id);
 const CAPE_TOWN = { lat: -33.9249, lon: 18.4241 };
 let ctx = null;
 let items = [];
+let featured = [];
 const chosen = new Set();
 const byId = new Map();
 
@@ -28,6 +29,15 @@ const CAT = {
 };
 const catOf = (c) => CAT[c] || { icon: '📍', label: c, tint: '#12a8a0' };
 const CAT_ORDER = ['viewpoint', 'beach', 'wine', 'wildlife', 'hike', 'garden', 'nature', 'scenic', 'walk', 'culture', 'art', 'history', 'food', 'market', 'music', 'comedy', 'film', 'festival', 'community'];
+const REGION = {
+  city: { label: 'City Bowl & Table Mountain', icon: '🏙️' }, atlantic: { label: 'Atlantic Seaboard', icon: '🌊' },
+  falsebay: { label: 'False Bay & the Penguins', icon: '🐧' }, peninsula: { label: 'The Cape Peninsula', icon: '🚗' },
+  constantia: { label: 'Constantia & Southern Suburbs', icon: '🌳' }, winelands: { label: 'The Winelands', icon: '🍷' },
+};
+const REGION_ORDER = ['city', 'atlantic', 'constantia', 'falsebay', 'peninsula', 'winelands'];
+let mode = 'vibe';
+let map = null;
+let markers = [];
 
 function railTile(it) {
   const c = catOf(it.category);
@@ -47,18 +57,54 @@ function railTile(it) {
     </article>`;
 }
 
-function renderRows() {
-  const groups = {};
-  items.forEach((it) => { (groups[it.category] = groups[it.category] || []).push(it); });
-  const cats = CAT_ORDER.filter((c) => groups[c]).concat(Object.keys(groups).filter((c) => !CAT_ORDER.includes(c)));
-  $('galRows').innerHTML = cats.map((c) => {
-    const info = catOf(c);
+function rowsFrom(groups, order, labeler) {
+  const keys = order.filter((k) => groups[k]).concat(Object.keys(groups).filter((k) => !order.includes(k)));
+  return keys.map((k) => {
+    const info = labeler(k);
     return `
       <section class="galRow">
-        <div class="galRowHead"><span class="grIco">${info.icon}</span>${esc(info.label)}<span class="grCount">${groups[c].length}</span></div>
-        <div class="galRail">${groups[c].map(railTile).join('')}</div>
+        <div class="galRowHead"><span class="grIco">${info.icon}</span>${esc(info.label)}<span class="grCount">${groups[k].length}</span></div>
+        <div class="galRail">${groups[k].map(railTile).join('')}</div>
       </section>`;
   }).join('');
+}
+
+const rowHtml = (icon, label, list, cls = '') => `
+  <section class="galRow${cls}">
+    <div class="galRowHead"><span class="grIco">${icon}</span>${esc(label)}<span class="grCount">${list.length}</span></div>
+    <div class="galRail">${list.map(railTile).join('')}</div>
+  </section>`;
+const stubRow = (icon, label, text) => `
+  <section class="galRow stubRow">
+    <div class="galRowHead"><span class="grIco">${icon}</span>${esc(label)}<span class="grSoon">soon</span></div>
+    <div class="galStub">${esc(text)}</div>
+  </section>`;
+
+// The editorial rows for "By vibe" — the curated buckets, not raw categories.
+const VIBE_BUCKETS = [
+  ['mustsee', '⭐', 'Tourism must-sees'],
+  ['outdoor', '🌄', 'The great outdoors'],
+  ['food', '🍽️', 'Food, wine & markets'],
+  ['seasonal', '🗓️', 'Seasonal musts — on now'],
+];
+
+function renderRows() {
+  if (mode === 'area') {
+    const groups = {};
+    [...items].sort((a, b) => (b.scenic || 0) - (a.scenic || 0)).forEach((it) => { const r = it.region || 'city'; (groups[r] = groups[r] || []).push(it); });
+    $('galRows').innerHTML = rowsFrom(groups, REGION_ORDER, (k) => REGION[k] || { label: k, icon: '📍' });
+    return;
+  }
+  // By vibe: Today's suggestions → editorial buckets → what's on → honest stubs.
+  const places = items.filter((i) => i.kind === 'place');
+  const events = items.filter((i) => i.kind === 'event');
+  const rows = [];
+  if (featured.length) rows.push(rowHtml('✨', 'Today’s suggestions', featured, ' featured'));
+  VIBE_BUCKETS.forEach(([k, ic, lb]) => { const list = places.filter((p) => (p.buckets || []).includes(k)); if (list.length) rows.push(rowHtml(ic, lb, list)); });
+  if (events.length) rows.push(rowHtml('🎟️', 'What’s on this week', events));
+  rows.push(stubRow('🧭', 'Off the beaten track', 'Hidden gems & lesser-known spots — coming with the local place harvest.'));
+  rows.push(stubRow('💚', 'Local SMMEs who rock', 'A curated list of small local businesses worth your rand — coming soon.'));
+  $('galRows').innerHTML = rows.join('');
 }
 
 function trayItem(it) {
@@ -93,6 +139,7 @@ export async function loadGallery(next) {
     const q = ctx.tripId ? `tripId=${encodeURIComponent(ctx.tripId)}` : `lat=${ctx.lat}&lon=${ctx.lon}`;
     const g = await api(`/api/gallery?${q}`);
     items = g.items || [];
+    featured = g.featured || [];
     byId.clear(); items.forEach((it) => byId.set(it.id, it));
     renderRows(); renderTray();
   } catch (err) {
@@ -131,7 +178,54 @@ function renderWoven(days) {
     </div>`).join('');
 }
 
+// ----- Map (Leaflet + free OpenStreetMap tiles) -----
+function popupHtml(it) {
+  const c = catOf(it.category), added = chosen.has(it.id);
+  return `<div class="mapPop">
+    ${it.image ? `<div class="mpImg" style="background-image:url('${esc(it.image)}')"></div>` : ''}
+    <div class="mpCat" style="color:${c.tint}">${c.icon} ${esc(c.label)}</div>
+    <b>${esc(it.title)}</b>
+    <div class="mpWhy">💡 ${esc(it.why)}</div>
+    <button class="mpAdd${added ? ' on' : ''}" data-id="${esc(it.id)}">${added ? '✓ Added' : '+ Add to plan'}</button>
+  </div>`;
+}
+function buildMarkers() {
+  if (!map || !window.L) return;
+  markers.forEach((m) => m.remove()); markers = [];
+  items.filter((it) => it.kind === 'place' && it.lat && it.lon).forEach((it) => {
+    const m = L.circleMarker([it.lat, it.lon], { radius: 9, color: '#fff', weight: 2, fillColor: catOf(it.category).tint, fillOpacity: 1 })
+      .bindPopup(popupHtml(it), { minWidth: 210 });
+    m.addTo(map); markers.push(m);
+  });
+}
+function initMap() {
+  if (!window.L) { $('mapEl').innerHTML = '<div class="wLoading">Map unavailable offline.</div>'; return; }
+  map = L.map('mapEl', { zoomControl: true, scrollWheelZoom: true }).setView([-34.05, 18.42], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 18 }).addTo(map);
+  buildMarkers();
+}
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.galMode').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
+  if (m === 'map') {
+    $('galRows').hidden = true; $('mapWrap').hidden = false;
+    if (!map) initMap(); else buildMarkers();
+    setTimeout(() => map && map.invalidateSize(), 80);
+  } else {
+    $('mapWrap').hidden = true; $('galRows').hidden = false;
+    renderRows();
+  }
+}
+
 export function mountGallery() {
+  document.querySelector('.galModes')?.addEventListener('click', (e) => { const b = e.target.closest('.galMode'); if (b) setMode(b.dataset.mode); });
+  // Add from a map popup.
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.mpAdd'); if (!b) return;
+    const id = b.dataset.id, on = !chosen.has(id);
+    setChosen(id, on);
+    b.classList.toggle('on', on); b.textContent = on ? '✓ Added' : '+ Add to plan';
+  });
   // Add from a rail card.
   $('galRows')?.addEventListener('click', (e) => {
     const card = e.target.closest('.rCard'); if (!card) return;

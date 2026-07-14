@@ -17,6 +17,26 @@ try { IMAGES = require('../data/images.json'); } catch (_) { IMAGES = {}; }
 
 const clamp = (n) => Math.max(0, Math.min(1, n));
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+// Which categories are "in season" this month (drives the Seasonal musts row).
+function seasonCategories() {
+  const m = new Date().getMonth() + 1; const s = new Set();
+  if ([6, 7, 8, 9, 10, 11].includes(m)) { s.add('wildlife'); s.add('viewpoint'); } // whale season — coast & lookouts
+  if ([12, 1, 2].includes(m)) { s.add('beach'); s.add('wine'); }                    // summer
+  if ([2, 3, 4].includes(m)) s.add('wine');                                          // harvest
+  if ([8, 9].includes(m)) { s.add('garden'); s.add('nature'); }                      // spring flowers
+  return s;
+}
+
+// Editorial buckets for a place, derived honestly from its data.
+function editorialBuckets(a, seasonCats) {
+  const b = [];
+  if ((a.scenic || 0) >= 0.9) b.push('mustsee');
+  if (a.outdoor && ['hike', 'beach', 'viewpoint', 'nature', 'garden', 'scenic-drive', 'walk', 'wildlife'].includes(a.category)) b.push('outdoor');
+  if (['food', 'market', 'wine'].includes(a.category)) b.push('food');
+  if (seasonCats.has(a.category)) b.push('seasonal');
+  return b;
+}
 const dayName = (dateStr) => new Date(dateStr + 'T12:00:00').toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'short' });
 
 async function sevenDays(base) {
@@ -53,18 +73,21 @@ function whyForPlace(a, day, allDays) {
 
 async function build(base) {
   const days = await sevenDays(base);
-  if (!days.length) return { days: [], items: [] };
+  if (!days.length) return { days: [], items: [], featured: [] };
+  const seasonCats = seasonCategories();
 
-  // PLACES — each with its single best day + why.
+  // PLACES — each with best day + why + region + coordinates + editorial buckets.
   const places = attractions.map((a) => {
     const scored = days.map((d, i) => ({ i, s: scorePlaceDay(a, d) })).sort((x, y) => y.s - x.s);
     const best = scored[0]; const bd = days[best.i];
     const det = detailsFor(a.id);
+    const region = AREA_TO_REGION[a.area] || 'city';
     return {
       id: a.id, kind: 'place', title: a.name, category: a.category, area: a.area,
+      region, regionName: REGION_NAME[region] || a.area, lat: a.lat, lon: a.lon,
       image: IMAGES[a.id] || null, blurb: a.blurb,
-      bestDayIndex: best.i, when: bd.label, why: whyForPlace(a, bd, days),
-      cost: det.cost || null, tags: a.tags || [],
+      bestDayIndex: best.i, bestScore: best.s, when: bd.label, why: whyForPlace(a, bd, days),
+      cost: det.cost || null, scenic: a.scenic || 0, buckets: editorialBuckets(a, seasonCats), tags: a.tags || [],
     };
   });
 
@@ -80,10 +103,41 @@ async function build(base) {
   const eventItems = [...evMap.values()].map((e) => {
     const wk = e._days.map((x) => x.weekday);
     const when = wk.length >= 5 ? 'Most days' : e._days.map((x) => x.label.split(',')[0]).join(', ');
-    return { id: e.id, kind: 'event', title: e.title, category: e.category, area: e.area, where: e.where, image: null, when, why: e.why, cost: null, tags: [] };
+    return { id: e.id, kind: 'event', title: e.title, category: e.category, area: e.area, region: e.area, regionName: REGION_NAME[e.area] || e.area, where: e.where, image: null, when, why: e.why, cost: null, tags: [] };
   });
 
-  return { location: base, days: days.map((d) => ({ date: d.date, label: d.label, weekday: d.weekday, hi: d.hi, windKmh: d.windKmh })), items: [...places, ...eventItems] };
+  // TODAY'S SUGGESTIONS — what today's weather/season actually favour (not just
+  // rain-safe fallbacks). Rank by today's score BOOSTED by scenic standout + season,
+  // capped at 2 per category for variety, each with a real "why now".
+  const today = days[0];
+  const whyNow = (a) => {
+    if (a.outdoor && today.windN < 0.35 && today.rainN < 0.3) return `Clear and calm today (${today.hi}°, wind ${today.windKmh} km/h) — a great day for it.`;
+    if (!a.outdoor && (today.rainN > 0.4 || today.windN > 0.55)) return `A rain-and-wind-safe pick for today — good whatever the sky does.`;
+    if (seasonCats.has(a.category)) return `In season right now — one to catch while you can.`;
+    return `A solid choice for today — ${today.hi}° and wind ${today.windKmh} km/h.`;
+  };
+  const rankedToday = attractions
+    .map((a) => ({ a, s: scorePlaceDay(a, today) + (a.scenic || 0) * 28 + (seasonCats.has(a.category) ? 12 : 0) }))
+    .sort((x, y) => y.s - x.s);
+  const catCount = {}; const todayPlaces = [];
+  for (const { a } of rankedToday) {
+    if (todayPlaces.length >= 6) break;
+    if ((catCount[a.category] || 0) >= 2) continue;
+    catCount[a.category] = (catCount[a.category] || 0) + 1;
+    const item = places.find((p) => p.id === a.id);
+    if (item) todayPlaces.push({ ...item, when: 'Great today', why: whyNow(a) });
+  }
+  const todayEvents = events.forDate(today.date).slice(0, 3).map((e) => ({
+    id: 'ev-' + slug(e.name + '|' + e.where), kind: 'event', title: e.name, category: e.category,
+    area: e.area, region: e.area, regionName: REGION_NAME[e.area] || e.area, where: e.where, image: null, when: 'On today', why: e.note,
+  }));
+  const featured = [...todayPlaces, ...todayEvents];
+
+  return {
+    location: base,
+    days: days.map((d) => ({ date: d.date, label: d.label, weekday: d.weekday, hi: d.hi, windKmh: d.windKmh })),
+    featured, items: [...places, ...eventItems],
+  };
 }
 
 // SECTION 2 — weave the chosen items into a plan. Two rules: (1) one geographic
