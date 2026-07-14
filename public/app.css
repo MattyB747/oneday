@@ -235,3 +235,45 @@ button{font-family:inherit;cursor:pointer}
 .planBar .dayPick{display:flex;gap:8px;margin:0}
 .planBar .cta{padding:12px 22px;margin-left:auto}
 @media(max-width:640px){.planBarInner{gap:10px}.pbLbl{flex:1 0 100%}.planBar .cta{margin-left:0}}
+
+/* ===== SECTION 1: the gallery (immersive menu) ===== */
+.galHead{max-width:1200px;margin:0 auto;padding:22px 20px 6px}
+.galHead h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:0 0 6px}
+.galFilters{display:flex;gap:8px;overflow-x:auto;padding:14px 0 4px;-webkit-overflow-scrolling:touch}
+.galFilters::-webkit-scrollbar{display:none}
+.galChip{flex:0 0 auto;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer}
+.galChip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.galleryGrid{max-width:1200px;margin:0 auto;padding:12px 20px 120px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.gCard{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 2px 12px rgba(15,36,48,.05);transition:transform .12s,box-shadow .12s,border-color .12s}
+.gCard.added{border-color:var(--teal);box-shadow:0 8px 26px rgba(18,168,160,.2)}
+.gImg{height:168px;background-size:cover;background-position:center;background-color:#e7eef1}
+.gTile{display:flex;align-items:center;justify-content:center}
+.gTileIco{font-size:60px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.3))}
+.gCat{position:absolute;top:12px;left:12px;color:#fff;font-size:11px;font-weight:800;letter-spacing:.02em;padding:5px 10px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.gAdd{position:absolute;top:10px;right:12px;width:38px;height:38px;border-radius:50%;background:#fff;border:0;color:var(--ink);font-size:22px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.gCard.added .gAdd{background:var(--teal);color:#fff}
+.gBody{padding:13px 15px 16px}
+.gWhen{font-size:12px;font-weight:800;color:var(--teal-d);letter-spacing:.02em;text-transform:uppercase}
+.gBody h3{font-size:18px;font-weight:800;letter-spacing:-.3px;margin:4px 0 7px;line-height:1.2}
+.gWhy{font-size:13.5px;color:var(--ink2);line-height:1.4;display:flex;gap:6px}
+.gWhy span{flex:0 0 auto}
+.gMeta{display:flex;gap:10px;flex-wrap:wrap;margin-top:9px;font-size:12px;font-weight:700;color:var(--muted)}
+.gMeta span{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px 8px}
+
+/* Planner tray (Section 2 entry) */
+.planTray{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:saturate(1.4) blur(10px);border-top:1px solid var(--line);z-index:20}
+.ptInner{max-width:1200px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+.ptCount{font-size:16px;color:var(--ink2)}.ptCount b{font-size:22px;color:var(--teal-d);font-weight:800}
+.planTray .cta{margin-left:auto;padding:13px 24px}
+
+/* ===== SECTION 2: the woven plan ===== */
+#woven{padding-bottom:60px}
+.wovenHead{max-width:900px;margin:0 auto;padding:20px 20px 6px}
+.backLink{background:none;border:0;color:var(--teal-d);font-weight:800;font-size:14px;cursor:pointer;padding:0 0 10px}
+.wovenHead h1{font-size:28px;font-weight:800;letter-spacing:-.5px;margin:0 0 6px}
+#wovenDays{max-width:900px;margin:0 auto;padding:12px 20px;display:flex;flex-direction:column;gap:16px}
+.wvDay{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 2px 12px rgba(15,36,48,.05)}
+.wvHead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.wvDate{font-size:19px;font-weight:800}
+.wvRegion{font-size:13px;font-weight:800;color:#fff;background:var(--teal);padding:4px 11px;border-radius:999px}
+.wvWhy{color:var(--ink2);font-size:13.5px;margin:8px 0 14px;line-height:1.4}

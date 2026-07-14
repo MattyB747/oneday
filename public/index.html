@@ -22,24 +22,39 @@
     </div>
   </section>
 
-  <!-- ===== The 7-Day Everything dashboard (the landing) ===== -->
+  <!-- ===== SECTION 1: the gallery of what's on (the menu) ===== -->
   <section class="screen on" id="week">
     <div class="topbar">
-      <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Everything happening. So you don’t have to look.</span></div>
+      <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Everything on. Pick what you like.</span></div>
     </div>
-    <div class="weekHead">
-      <h1>The best version of your week.</h1>
-      <p class="tag" id="weekSub">We read the weather, tides, wind, what’s on and what’s in season — and tell you the best thing to do each day. Tap any day for the plan and the why.</p>
+    <div class="galHead">
+      <h1>What’s on in Cape Town.</h1>
+      <p class="tag">The next 7 days. Tap <b>+</b> on anything that appeals — we weave your picks into the perfect plan, on the right day and time, and tell you exactly why.</p>
       <div class="natureNow" id="natureNow" hidden></div>
+      <div class="galFilters" id="galFilters"></div>
     </div>
-    <div class="weekGrid" id="weekGrid"></div>
-    <div class="planBar">
-      <div class="planBarInner">
-        <div class="pbLbl">Love what you see? <b>Plan the whole thing.</b></div>
-        <div class="dayPick" id="dayPick"></div>
-        <button class="cta" id="planBtn">Plan my trip →</button>
+    <div class="galleryGrid" id="galleryGrid"><div class="wLoading">Reading what’s on across Cape Town…</div></div>
+
+    <!-- SECTION 2 entry: the planner tray (sticky) -->
+    <div class="planTray" id="planTray" hidden>
+      <div class="ptInner">
+        <div class="ptCount"><b id="ptNum">0</b> <span>in your plan</span></div>
+        <button class="cta" id="weaveBtn">Weave my plan →</button>
       </div>
     </div>
+  </section>
+
+  <!-- ===== SECTION 2: the woven plan ===== -->
+  <section class="screen" id="woven">
+    <div class="topbar">
+      <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Your picks, woven together.</span></div>
+    </div>
+    <div class="wovenHead">
+      <button class="backLink" id="wovenBack">‹ Back to what’s on</button>
+      <h1>Your plan, woven together.</h1>
+      <p class="tag">Each pick on its best day and time — clustered so you never criss-cross the city — and here’s why.</p>
+    </div>
+    <div id="wovenDays"></div>
   </section>
 
   <!-- ===== Today (the hero) ===== -->

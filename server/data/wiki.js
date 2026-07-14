@@ -12,4 +12,6 @@ module.exports = {
   'va-waterfront': 'Victoria_%26_Alfred_Waterfront', 'clifton': 'Clifton,_Cape_Town', 'llandudno': 'Llandudno,_Cape_Town',
   'two-oceans-aquarium': 'Two_Oceans_Aquarium', 'company-garden': "Company's_Garden", 'companys-garden': "Company's_Garden",
   'sea-point-promenade': 'Sea_Point', 'silvermine': 'Silvermine_Nature_Reserve', 'rhodes-memorial': 'Rhodes_Memorial',
+  'old-biscuit-mill': 'Woodstock,_Cape_Town', 'spier': 'Spier_Wine_Farm', 'franschhoek-tram': 'Franschhoek',
+  'maidens-cove': 'Clifton,_Cape_Town', 'bree-street': 'Cape_Town_City_Centre',
 };

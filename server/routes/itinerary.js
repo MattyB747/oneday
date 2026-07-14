@@ -7,6 +7,7 @@ const { getTrip } = require('../services/trip');
 const itinerary = require('../services/itinerary');
 const week = require('../services/week');
 const weekplan = require('../services/weekplan');
+const gallery = require('../services/gallery');
 
 const router = express.Router();
 
@@ -37,6 +38,29 @@ router.get('/api/weekplan', async (req, res) => {
     res.json(await weekplan.build(base));
   } catch (err) {
     res.status(502).json({ error: (err && err.message) || 'Could not read the week' });
+  }
+});
+
+// SECTION 1 — the gallery of what's on (image-led menu, each with best day + why).
+router.get('/api/gallery', async (req, res) => {
+  try {
+    const base = baseFrom(req);
+    if (!base) return res.status(400).json({ error: 'Location required' });
+    res.json(await gallery.build(base));
+  } catch (err) {
+    res.status(502).json({ error: (err && err.message) || 'Could not load what’s on' });
+  }
+});
+
+// SECTION 2 — weave the user's chosen items into a plan.
+router.post('/api/weave', async (req, res) => {
+  try {
+    const base = baseFrom(req);
+    if (!base) return res.status(400).json({ error: 'Location required' });
+    const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
+    res.json(await gallery.weave(base, ids));
+  } catch (err) {
+    res.status(502).json({ error: (err && err.message) || 'Could not weave your plan' });
   }
 });
 

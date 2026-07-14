@@ -1,8 +1,7 @@
 // Setup — one question: where are you staying. Then show the 7-day Everything
 // dashboard, from which you spin up an itinerary.
 import { api } from '../core/api.js';
-import { loadWeek } from './week.js';
-import { loadTrip } from './trip.js';
+import { loadGallery } from './gallery.js';
 
 const $ = (id) => document.getElementById(id);
 function toast(m) { const t = $('toast'); if (!t) return; t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2400); }
@@ -13,7 +12,7 @@ async function go(payload) {
   try {
     const res = await api('/api/trip', { method: 'POST', body: payload });
     try { sessionStorage.setItem('odTrip', res.tripId); sessionStorage.setItem('odStay', JSON.stringify(res.stay)); } catch (_) {}
-    await loadWeek({ tripId: res.tripId, lat: res.stay.lat, lon: res.stay.lon });
+    await loadGallery({ tripId: res.tripId, lat: res.stay.lat, lon: res.stay.lon });
   } catch (err) { toast(err.message || 'Could not load — try again'); }
   finally { $('goBtn').disabled = false; $('goBtn').textContent = 'Show me Cape Town →'; }
 }
