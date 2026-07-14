@@ -166,8 +166,43 @@ button{font-family:inherit;cursor:pointer}
 .weekHead{max-width:1200px;margin:0 auto;padding:26px 22px 8px}
 .weekHead h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:0 0 6px}
 .natureNow{margin-top:12px;background:#e3f5f3;border:1px solid #c7ebe7;color:var(--teal-d);border-radius:12px;padding:11px 14px;font-size:14px}
-.weekGrid{max-width:1200px;margin:0 auto;padding:14px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-.wLoading{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px}
+.weekGrid{max-width:760px;margin:0 auto;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+.wLoading{text-align:center;color:var(--muted);padding:40px}
+
+/* ===== Decision rows (the week of verdicts) ===== */
+.dRow{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 10px rgba(15,36,48,.04);overflow:hidden}
+.dRow.open{border-color:var(--teal);box-shadow:0 6px 22px rgba(18,168,160,.14)}
+.dHead{width:100%;background:none;border:0;text-align:left;display:flex;align-items:center;gap:14px;padding:15px 16px;cursor:pointer}
+.dEmoji{font-size:30px;flex:0 0 auto;line-height:1}
+.dMain{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.dDay{font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+.dDay em{color:var(--teal-d);font-style:normal}
+.dVerdict{font-size:19px;font-weight:800;letter-spacing:-.3px;color:var(--ink);line-height:1.15}
+.dWhy{font-size:13px;color:var(--ink2);line-height:1.35;margin-top:1px}
+.dWx{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:20px}
+.dWx b{font-size:15px;font-weight:800}
+.dChev{flex:0 0 auto;color:var(--muted);font-size:22px;font-weight:700;transition:transform .2s;transform:rotate(90deg)}
+.dRow.open .dChev{transform:rotate(-90deg)}
+/* Body: collapsed by default, expands when open */
+.dBody{display:none;padding:0 16px 16px;flex-direction:column;gap:16px}
+.dRow.open .dBody{display:flex}
+/* The plan */
+.dPlan{display:flex;flex-direction:column;gap:0;border-left:2px solid var(--line);margin-left:6px;padding-left:0}
+.dStop{display:flex;gap:12px;align-items:flex-start;padding:9px 0 9px 14px;position:relative}
+.dStop::before{content:"";position:absolute;left:-5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.dt{flex:0 0 46px;font-size:12px;font-weight:800;color:var(--teal-d)}
+.dStopBody{min-width:0}
+.dStopBody b{font-size:14.5px;font-weight:700}
+.dStopBody small{color:var(--muted);font-size:12px}
+.dw{color:var(--ink2);font-size:12.5px;line-height:1.4;margin-top:2px}
+.dc{display:inline-block;font-size:11px;font-weight:800;color:var(--teal-d);background:#e3f5f3;border-radius:6px;padding:1px 7px;margin-top:4px}
+.dMeal{font-size:11px;font-weight:700;color:var(--muted);margin-left:6px}
+/* Evidence drawer */
+.dEvidence{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.dEvHead{font-size:11px;font-weight:800;letter-spacing:.07em;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.dEvents{display:flex;flex-direction:column;gap:5px}
+.dEvent b{font-size:13px;font-weight:700}
+.dEvent small{color:var(--muted);font-size:12px}
 .wCard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(15,36,48,.04);display:flex;flex-direction:column;gap:11px}
 .wHeadRow{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 .wDate{font-weight:800;font-size:16px}

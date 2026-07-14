@@ -6,6 +6,7 @@ const express = require('express');
 const { getTrip } = require('../services/trip');
 const itinerary = require('../services/itinerary');
 const week = require('../services/week');
+const weekplan = require('../services/weekplan');
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ function baseFrom(req) {
   return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
 }
 
-// The 7-day "Everything" dashboard (the landing).
+// The 7-day "Everything" dashboard (raw evidence).
 router.get('/api/week', async (req, res) => {
   try {
     const base = baseFrom(req);
@@ -25,6 +26,17 @@ router.get('/api/week', async (req, res) => {
     res.json(await week.build(base, 7));
   } catch (err) {
     res.status(502).json({ error: (err && err.message) || 'Could not load the week' });
+  }
+});
+
+// The DECISION layer — "the best version of each day" (verdict + plan + evidence).
+router.get('/api/weekplan', async (req, res) => {
+  try {
+    const base = baseFrom(req);
+    if (!base) return res.status(400).json({ error: 'Location required' });
+    res.json(await weekplan.build(base));
+  } catch (err) {
+    res.status(502).json({ error: (err && err.message) || 'Could not read the week' });
   }
 });
 
