@@ -8,6 +8,7 @@ const CAPE_TOWN = { lat: -33.9249, lon: 18.4241 };
 let ctx = null;
 let items = [];
 let featured = [];
+let conditions = null;
 let tripDays = 3;
 const chosen = new Set();
 const byId = new Map();
@@ -37,8 +38,6 @@ const REGION = {
 };
 const REGION_ORDER = ['city', 'atlantic', 'constantia', 'falsebay', 'peninsula', 'winelands'];
 let mode = 'vibe';
-let map = null;
-let markers = [];
 
 function railTile(it) {
   const c = catOf(it.category);
@@ -138,7 +137,7 @@ function setChosen(id, on) {
   } else if (mode !== 'map') {
     renderRows(); // removed from the plan → bring it back into the gallery
   }
-  if (map) buildMarkers();
+  if (mode === 'map') renderArtMap(); // reflect selection on the illustrated map
   renderTray();
 }
 
@@ -150,6 +149,7 @@ export async function loadGallery(next) {
     const g = await api(`/api/gallery?${q}`);
     items = g.items || [];
     featured = g.featured || [];
+    conditions = g.conditions || null;
     byId.clear(); items.forEach((it) => byId.set(it.id, it));
     renderRows(); renderTray();
   } catch (err) {
@@ -205,42 +205,91 @@ function renderWoven(res) {
     </div>`).join('');
 }
 
-// ----- Map (Leaflet + free OpenStreetMap tiles) -----
-function popupHtml(it) {
-  const c = catOf(it.category), added = chosen.has(it.id);
-  return `<div class="mapPop">
-    ${it.image ? `<div class="mpImg" style="background-image:url('${esc(it.image)}')"></div>` : ''}
-    <div class="mpCat" style="color:${c.tint}">${c.icon} ${esc(c.label)}</div>
-    <b>${esc(it.title)}</b>
-    <div class="mpWhy">💡 ${esc(it.why)}</div>
-    <button class="mpAdd${added ? ' on' : ''}" data-id="${esc(it.id)}">${added ? '✓ Added' : '+ Add to plan'}</button>
-  </div>`;
+// ----- Illustrated Cape Town map with live conditions overlaid -----
+// Bounding box for the peninsula; lat/lon project linearly onto the art so pins
+// land in the right spot even though the coastline is stylised.
+const ARTBB = { latMax: -33.76, latMin: -34.38, lonMin: 18.27, lonMax: 18.60 };
+const AW = 400, AH = 580, APAD = 14;
+function projectXY(lat, lon) {
+  const x = APAD + (lon - ARTBB.lonMin) / (ARTBB.lonMax - ARTBB.lonMin) * (AW - 2 * APAD);
+  const y = APAD + (ARTBB.latMax - lat) / (ARTBB.latMax - ARTBB.latMin) * (AH - 2 * APAD);
+  return [Math.max(8, Math.min(AW - 8, x)), Math.max(8, Math.min(AH - 8, y))];
 }
-function buildMarkers() {
-  if (!map || !window.L) return;
-  markers.forEach((m) => m.remove()); markers = [];
-  items.filter((it) => it.kind === 'place' && it.lat && it.lon).forEach((it) => {
-    const sel = chosen.has(it.id);
-    const m = L.circleMarker([it.lat, it.lon], sel
-      ? { radius: 13, color: '#0e8c85', weight: 4, fillColor: '#12a8a0', fillOpacity: 1 }   // selected — big teal pin
-      : { radius: 9, color: '#fff', weight: 2, fillColor: catOf(it.category).tint, fillOpacity: 1 })
-      .bindPopup(popupHtml(it), { minWidth: 210 });
-    m.addTo(map); markers.push(m);
-  });
+
+function conditionsHud() {
+  const c = conditions || {};
+  const rows = [
+    ['🌡️', c.tempC != null ? `${c.tempC}°` : '–', 'temp'],
+    ['💨', c.windKmh != null ? `${c.windKmh} km/h` : '–', 'wind'],
+    ['🌧️', c.rainProb != null ? `${c.rainProb}%` : '–', 'rain'],
+    ['🌊', c.lowTide ? `low ${c.lowTide}` : '–', 'tide'],
+    ['🌅', c.sunset || '–', 'sunset'],
+  ];
+  return `<div class="artHud"><div class="artHudTitle">Right now in Cape Town</div>${rows.map(([i, v, l]) => `<div class="ahRow"><span>${i}</span><b>${esc(v)}</b><small>${l}</small></div>`).join('')}</div>`;
 }
-function initMap() {
-  if (!window.L) { $('mapEl').innerHTML = '<div class="wLoading">Map unavailable offline.</div>'; return; }
-  map = L.map('mapEl', { zoomControl: true, scrollWheelZoom: true }).setView([-34.05, 18.42], 10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 18 }).addTo(map);
-  buildMarkers();
+
+function renderArtMap() {
+  const c = conditions || {};
+  const places = items.filter((it) => it.kind === 'place' && it.lat && it.lon);
+  const windTo = (c.windDir != null ? c.windDir + 180 : 45); // dir wind blows TOWARD
+  const rainy = (c.rainProb || 0) >= 40;
+
+  // Selected pins draw on top + labelled; others are quiet dots.
+  const pins = places.map((p) => {
+    const [x, y] = projectXY(p.lat, p.lon); const sel = chosen.has(p.id); const t = catOf(p.category).tint;
+    if (sel) {
+      const left = x > AW * 0.55; // flip label inward near the right edge
+      const label = left ? `<text x="-11" y="4" text-anchor="end" class="artLbl">${esc(p.title)}</text>` : `<text x="11" y="4" class="artLbl">${esc(p.title)}</text>`;
+      return `<g class="artPin sel" data-pin="${esc(p.id)}" transform="translate(${x},${y})"><circle r="8" fill="#12a8a0" stroke="#fff" stroke-width="3"/>${label}</g>`;
+    }
+    return `<circle class="artPin" data-pin="${esc(p.id)}" cx="${x}" cy="${y}" r="4.5" fill="${t}" opacity="0.75"/>`;
+  }).join('');
+
+  // Wind streaks drifting in the real wind direction.
+  const streaks = Array.from({ length: 7 }).map((_, i) => {
+    const y = 60 + i * 70; const dur = (3.5 + (i % 3)).toFixed(1);
+    return `<line class="artWind" x1="0" y1="${y}" x2="46" y2="${y}" transform="rotate(${windTo} 200 ${y})" style="animation-duration:${dur}s;animation-delay:${(i * 0.4).toFixed(1)}s"/>`;
+  }).join('');
+
+  const rain = rainy ? Array.from({ length: 40 }).map(() => {
+    const x = Math.round(Math.random() * AW); const d = (0.6 + Math.random() * 0.8).toFixed(2); const del = (Math.random() * 1.5).toFixed(2);
+    return `<line class="artRain" x1="${x}" y1="-10" x2="${x - 6}" y2="6" style="animation-duration:${d}s;animation-delay:${del}s"/>`;
+  }).join('') : '';
+
+  const svg = `
+    <svg class="artSvg" viewBox="0 0 ${AW} ${AH}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe3ef"/><stop offset="1" stop-color="#7fc2d9"/></linearGradient>
+        <linearGradient id="land" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9ddc4"/><stop offset="1" stop-color="#d8cba9"/></linearGradient>
+      </defs>
+      <rect width="${AW}" height="${AH}" fill="url(#sea)"/>
+      <!-- stylised peninsula: mainland across the top, a tongue down to Cape Point,
+           False Bay open to the SE, the Atlantic to the W -->
+      <path d="M0,0 L400,0 L400,150 C360,168 300,150 262,168 C250,240 244,320 232,398
+               C222,470 210,520 182,552 C168,566 150,560 146,532 C132,452 120,352 116,262
+               C112,206 92,168 44,156 C24,151 8,150 0,146 Z"
+            fill="url(#land)" stroke="#c9b98f" stroke-width="2"/>
+      <!-- Table Mountain -->
+      <path d="M120,150 L100,120 Q140,108 178,122 L162,150 Z" fill="#b7a878" opacity="0.9"/>
+      <text x="150" y="118" class="artArea" text-anchor="middle">⛰ Table Mtn</text>
+      <text x="205" y="92" class="artArea">City Bowl</text>
+      <text x="40" y="300" class="artSea">ATLANTIC</text>
+      <text x="300" y="430" class="artSea">FALSE BAY</text>
+      <text x="150" y="540" class="artArea">Cape Point</text>
+      ${streaks}
+      ${rain}
+      ${pins}
+    </svg>`;
+
+  $('mapEl').innerHTML = `<div class="artMap">${svg}${conditionsHud()}</div>`;
 }
+
 function setMode(m) {
   mode = m;
   document.querySelectorAll('.galMode').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
   if (m === 'map') {
     $('galRows').hidden = true; $('mapWrap').hidden = false;
-    if (!map) initMap(); else buildMarkers();
-    setTimeout(() => map && map.invalidateSize(), 80);
+    renderArtMap();
   } else {
     $('mapWrap').hidden = true; $('galRows').hidden = false;
     renderRows();
@@ -249,12 +298,12 @@ function setMode(m) {
 
 export function mountGallery() {
   document.querySelector('.galModes')?.addEventListener('click', (e) => { const b = e.target.closest('.galMode'); if (b) setMode(b.dataset.mode); });
-  // Add from a map popup.
-  document.addEventListener('click', (e) => {
-    const b = e.target.closest('.mpAdd'); if (!b) return;
-    const id = b.dataset.id, on = !chosen.has(id);
-    setChosen(id, on);
-    b.classList.toggle('on', on); b.textContent = on ? '✓ Added' : '+ Add to plan';
+  // Tap a pin on the illustrated map to add/remove it.
+  $('mapEl')?.addEventListener('click', (e) => {
+    const pin = e.target.closest('[data-pin]'); if (!pin) return;
+    const id = pin.getAttribute('data-pin');
+    setChosen(id, !chosen.has(id));
+    const it = byId.get(id); if (it) toast(chosen.has(id) ? `Added ${it.title}` : `Removed ${it.title}`);
   });
   // Add from a rail card.
   $('galRows')?.addEventListener('click', (e) => {

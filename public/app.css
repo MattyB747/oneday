@@ -357,3 +357,25 @@ button{font-family:inherit;cursor:pointer}
 .nbBody b{display:block;font-size:15px;font-weight:800;margin:2px 0}
 .nbWhy{font-size:12.5px;color:var(--ink2);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .nbAdd{flex:0 0 auto;background:var(--teal);color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:800;font-size:13px;cursor:pointer}
+
+/* ===== Illustrated conditions map ===== */
+#mapEl{height:74vh;min-height:520px;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 4px 18px rgba(15,36,48,.08);padding:0}
+.artMap{position:relative;width:100%;height:100%}
+.artSvg{width:100%;height:100%;display:block}
+.artArea{font:800 12px var(--font);fill:#6b5d3a;letter-spacing:.02em}
+.artSea{font:800 13px var(--font);fill:#4a94ad;letter-spacing:.22em;opacity:.7}
+.artLbl{font:800 12px var(--font);fill:#0f2430;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+.artPin{cursor:pointer}
+.artPin.sel{filter:drop-shadow(0 3px 6px rgba(0,0,0,.3))}
+/* wind streaks drift across in the real wind direction */
+.artWind{stroke:#fff;stroke-width:2.5;stroke-linecap:round;opacity:0;animation:artdrift linear infinite}
+@keyframes artdrift{0%{opacity:0;transform:translateX(-30px)}20%{opacity:.75}100%{opacity:0;transform:translateX(430px)}}
+.artRain{stroke:#6fb4d6;stroke-width:1.5;stroke-linecap:round;opacity:.6;animation:artfall linear infinite}
+@keyframes artfall{0%{transform:translateY(0)}100%{transform:translateY(600px)}}
+/* live-conditions HUD floating on the map */
+.artHud{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:0 6px 20px rgba(15,36,48,.16);min-width:132px}
+.artHudTitle{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.ahRow{display:flex;align-items:center;gap:8px;padding:3px 0}
+.ahRow span{font-size:15px;width:18px;text-align:center}
+.ahRow b{font-size:14px;font-weight:800;color:var(--ink)}
+.ahRow small{margin-left:auto;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}

@@ -8,6 +8,7 @@
 //                   for every placement. The human picks WHAT; we own WHEN/WHERE/WHY.
 
 const weather = require('./weather');
+const tides = require('./tides');
 const events = require('../data/events');
 const { attractions, byId } = require('../data/attractions');
 const { detailsFor } = require('../data/details');
@@ -46,8 +47,19 @@ async function sevenDays(base) {
     date: d.date, label: dayName(d.date),
     weekday: new Date(d.date + 'T12:00:00').toLocaleDateString('en-ZA', { weekday: 'short' }),
     hi: Math.round(d.maxTempC), windKmh: Math.round(d.maxWindKmh || 0), rainProb: d.maxRainProb || 0,
+    windDir: d.windDir, uv: d.uvMax, sunrise: d.sunrise, sunset: d.sunset,
     windN: clamp((d.maxWindKmh || 0) / 45), rainN: clamp((d.maxRainProb || 0) / 100), warmN: clamp(((d.maxTempC || 0) - 14) / 12),
   }));
+}
+
+// Today's live conditions for the illustrated map overlay.
+function todayConditions(days, base) {
+  const d = days[0]; if (!d) return null;
+  const tide = tides.forDate(d.date);
+  const low = (tide.lows || []).find((l) => l.hour >= 6 && l.hour <= 19) || tide.lows[0] || null;
+  const t = (iso) => { try { return new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Johannesburg' }); } catch (_) { return null; } };
+  return { tempC: d.hi, windKmh: d.windKmh, windDir: d.windDir, rainProb: d.rainProb, uv: d.uv != null ? Math.round(d.uv) : null,
+    sunrise: t(d.sunrise), sunset: t(d.sunset), lowTide: low ? low.hhmm : null };
 }
 
 // Score a place for a given day from its own weather-sensitivity, and say why.
@@ -137,6 +149,7 @@ async function build(base) {
   return {
     location: base,
     days: days.map((d) => ({ date: d.date, label: d.label, weekday: d.weekday, hi: d.hi, windKmh: d.windKmh })),
+    conditions: todayConditions(days, base),
     featured, items: [...places, ...eventItems],
   };
 }
