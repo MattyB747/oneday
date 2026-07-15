@@ -397,3 +397,15 @@ button{font-family:inherit;cursor:pointer}
 .dAbout{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4;font-style:italic}
 .gmapsBtn{display:block;margin-top:14px;text-align:center;background:#0f2430;color:#fff;border-radius:12px;padding:12px;font-weight:800;font-size:14px;text-decoration:none}
 .gmapsBtn:active{transform:scale(.99)}
+
+/* ===== Illustrated basemap image + HTML pin overlay ===== */
+.artMap{position:relative;width:100%;height:100%;overflow:hidden}
+.baseImg{width:100%;height:100%;object-fit:cover;display:block}
+.artMap.noimg .baseImg{display:none}
+.svgFallback{display:none}
+.artMap.noimg .svgFallback{display:block;width:100%;height:100%}
+.pinLayer{position:absolute;inset:0;pointer-events:none}
+.imgPin{position:absolute;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:var(--pc);border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer;padding:0;pointer-events:auto;z-index:1}
+.imgPin.sel{width:20px;height:20px;background:#12a8a0;border-width:3px;z-index:3;box-shadow:0 3px 10px rgba(0,0,0,.4)}
+.ipLbl{position:absolute;left:26px;top:50%;transform:translateY(-50%);white-space:nowrap;background:#fff;color:#0f2430;font-size:12px;font-weight:800;padding:3px 8px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.imgPin.lbl-left .ipLbl{left:auto;right:26px}

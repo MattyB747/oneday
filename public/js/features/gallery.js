@@ -272,60 +272,40 @@ function conditionsHud() {
   return `<div class="artHud"><div class="artHudTitle">Right now in Cape Town</div>${rows.map(([i, v, l]) => `<div class="ahRow"><span>${i}</span><b>${esc(v)}</b><small>${l}</small></div>`).join('')}</div>`;
 }
 
-function renderArtMap() {
-  const c = conditions || {};
-  const places = items.filter((it) => it.kind === 'place' && it.lat && it.lon);
-  const windTo = (c.windDir != null ? c.windDir + 180 : 45); // dir wind blows TOWARD
-  const rainy = (c.rainProb || 0) >= 40;
-
-  // Selected pins draw on top + labelled; others are quiet dots.
-  const pins = places.map((p) => {
-    const [x, y] = projectXY(p.lat, p.lon); const sel = chosen.has(p.id); const t = catOf(p.category).tint;
-    if (sel) {
-      const left = x > AW * 0.55; // flip label inward near the right edge
-      const label = left ? `<text x="-11" y="4" text-anchor="end" class="artLbl">${esc(p.title)}</text>` : `<text x="11" y="4" class="artLbl">${esc(p.title)}</text>`;
-      return `<g class="artPin sel" data-pin="${esc(p.id)}" transform="translate(${x},${y})"><circle r="8" fill="#12a8a0" stroke="#fff" stroke-width="3"/>${label}</g>`;
-    }
-    return `<circle class="artPin" data-pin="${esc(p.id)}" cx="${x}" cy="${y}" r="4.5" fill="${t}" opacity="0.75"/>`;
-  }).join('');
-
-  // Wind streaks drifting in the real wind direction.
-  const streaks = Array.from({ length: 7 }).map((_, i) => {
-    const y = 60 + i * 70; const dur = (3.5 + (i % 3)).toFixed(1);
-    return `<line class="artWind" x1="0" y1="${y}" x2="46" y2="${y}" transform="rotate(${windTo} 200 ${y})" style="animation-duration:${dur}s;animation-delay:${(i * 0.4).toFixed(1)}s"/>`;
-  }).join('');
-
-  const rain = rainy ? Array.from({ length: 40 }).map(() => {
-    const x = Math.round(Math.random() * AW); const d = (0.6 + Math.random() * 0.8).toFixed(2); const del = (Math.random() * 1.5).toFixed(2);
-    return `<line class="artRain" x1="${x}" y1="-10" x2="${x - 6}" y2="6" style="animation-duration:${d}s;animation-delay:${del}s"/>`;
-  }).join('') : '';
-
-  const svg = `
+// Stylised fallback backdrop (used until the real illustrated basemap image is added).
+function artBackdropSvg() {
+  return `
     <svg class="artSvg" viewBox="0 0 ${AW} ${AH}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe3ef"/><stop offset="1" stop-color="#7fc2d9"/></linearGradient>
         <linearGradient id="land" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9ddc4"/><stop offset="1" stop-color="#d8cba9"/></linearGradient>
       </defs>
       <rect width="${AW}" height="${AH}" fill="url(#sea)"/>
-      <!-- stylised peninsula: mainland across the top, a tongue down to Cape Point,
-           False Bay open to the SE, the Atlantic to the W -->
-      <path d="M0,0 L400,0 L400,150 C360,168 300,150 262,168 C250,240 244,320 232,398
-               C222,470 210,520 182,552 C168,566 150,560 146,532 C132,452 120,352 116,262
-               C112,206 92,168 44,156 C24,151 8,150 0,146 Z"
-            fill="url(#land)" stroke="#c9b98f" stroke-width="2"/>
-      <!-- Table Mountain -->
+      <path d="M0,0 L400,0 L400,150 C360,168 300,150 262,168 C250,240 244,320 232,398 C222,470 210,520 182,552 C168,566 150,560 146,532 C132,452 120,352 116,262 C112,206 92,168 44,156 C24,151 8,150 0,146 Z" fill="url(#land)" stroke="#c9b98f" stroke-width="2"/>
       <path d="M120,150 L100,120 Q140,108 178,122 L162,150 Z" fill="#b7a878" opacity="0.9"/>
-      <text x="150" y="118" class="artArea" text-anchor="middle">⛰ Table Mtn</text>
-      <text x="205" y="92" class="artArea">City Bowl</text>
-      <text x="40" y="300" class="artSea">ATLANTIC</text>
-      <text x="300" y="430" class="artSea">FALSE BAY</text>
-      <text x="150" y="540" class="artArea">Cape Point</text>
-      ${streaks}
-      ${rain}
-      ${pins}
+      <text x="40" y="300" class="artSea">ATLANTIC</text><text x="300" y="430" class="artSea">FALSE BAY</text>
     </svg>`;
+}
 
-  $('mapEl').innerHTML = `<div class="artMap">${svg}${conditionsHud()}</div>`;
+// Map with an illustrated basemap image + HTML pin overlay. Falls back to the
+// stylised SVG until public/img/cape-basemap.jpg is added, then it just appears.
+function renderArtMap() {
+  const places = items.filter((it) => it.kind === 'place' && it.lat && it.lon);
+  const pins = places.map((p) => {
+    const [x, y] = projectXY(p.lat, p.lon); const sel = chosen.has(p.id);
+    const px = (x / AW * 100).toFixed(2), py = (y / AH * 100).toFixed(2);
+    const left = x > AW * 0.55;
+    return `<button class="imgPin${sel ? ' sel' : ''}${left ? ' lbl-left' : ''}" data-pin="${esc(p.id)}" style="left:${px}%;top:${py}%;--pc:${sel ? '#12a8a0' : catOf(p.category).tint}">${sel ? `<span class="ipLbl">${esc(p.title)}</span>` : ''}</button>`;
+  }).join('');
+  $('mapEl').innerHTML = `
+    <div class="artMap noimg">
+      <img class="baseImg" src="/img/cape-basemap.jpg" alt="Illustrated Cape Town map"
+           onload="this.closest('.artMap').classList.remove('noimg')"
+           onerror="this.closest('.artMap').classList.add('noimg')">
+      <div class="svgFallback">${artBackdropSvg()}</div>
+      <div class="pinLayer">${pins}</div>
+      ${conditionsHud()}
+    </div>`;
 }
 
 function setMode(m) {
