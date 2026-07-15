@@ -2,6 +2,7 @@
 // swipe left→right; tap + and the tile drops into a fixed bottom carousel. "Weave"
 // sends your picks to the logic, which lays them out on the right day/time with why.
 import { api } from '../core/api.js';
+import { capture, captureSession } from '../core/capture.js';
 
 const $ = (id) => document.getElementById(id);
 const CAPE_TOWN = { lat: -33.9249, lon: 18.4241 };
@@ -131,6 +132,8 @@ function renderDayPick() {
 
 function setChosen(id, on) {
   if (on) chosen.add(id); else chosen.delete(id);
+  const it = byId.get(id);
+  capture(on ? 'place_added' : 'place_removed', { id, name: it && it.name, category: it && it.category, region: it && it.region, from: mode });
   if (on) {
     // Added → take it out of the gallery (no point offering what you already have).
     document.querySelectorAll(`.rCard[data-id="${CSS.escape(id)}"]`).forEach((c) => c.remove());
@@ -151,6 +154,7 @@ export async function loadGallery(next) {
     featured = g.featured || [];
     conditions = g.conditions || null;
     byId.clear(); items.forEach((it) => byId.set(it.id, it));
+    capture('gallery_shown', { items: items.length, featured: (featured || []).map((f) => f.id), conditions });
     renderRows(); renderTray();
   } catch (err) {
     $('galRows').innerHTML = `<div class="wLoading">Couldn’t load what’s on — ${esc(err.message)}</div>`;
@@ -163,7 +167,7 @@ async function weave() {
   $('weaveBtn').disabled = true; $('weaveBtn').textContent = 'Weaving…';
   try {
     const base = ctx.tripId ? { tripId: ctx.tripId } : { lat: ctx.lat, lon: ctx.lon };
-    const r = await api('/api/weave', { method: 'POST', body: { ...base, ids: placeIds, days: tripDays } });
+    const r = await api('/api/weave', { method: 'POST', body: { ...base, ids: placeIds, days: tripDays, session: captureSession() } });
     renderWoven(r);
     show('woven'); window.scrollTo(0, 0);
   } catch (err) { toast(err.message || 'Could not weave'); }
@@ -345,7 +349,11 @@ export function mountGallery() {
   // Day-count selector.
   $('ptDayPick')?.addEventListener('click', (e) => { const b = e.target.closest('.ptDay'); if (!b) return; tripDays = Number(b.dataset.n); renderDayPick(); });
   // "Add" a nearby gem straight from the plan → re-weave with it included.
-  $('wovenDays')?.addEventListener('click', (e) => { const b = e.target.closest('.nbAdd'); if (!b) return; setChosen(b.dataset.id, true); weave(); });
+  $('wovenDays')?.addEventListener('click', (e) => {
+    const add = e.target.closest('.nbAdd');
+    if (add) { setChosen(add.dataset.id, true); weave(); return; }
+    if (e.target.closest('.gmapsBtn')) capture('export_gmaps', { days: tripDays });
+  });
 
   let boot = { ...CAPE_TOWN };
   try {

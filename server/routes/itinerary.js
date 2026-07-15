@@ -8,6 +8,7 @@ const itinerary = require('../services/itinerary');
 const week = require('../services/week');
 const weekplan = require('../services/weekplan');
 const gallery = require('../services/gallery');
+const db = require('../store/db');
 
 const router = express.Router();
 
@@ -58,7 +59,14 @@ router.post('/api/weave', async (req, res) => {
     const base = baseFrom(req);
     if (!base) return res.status(400).json({ error: 'Location required' });
     const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
-    res.json(await gallery.weave(base, ids, req.body && req.body.days));
+    const result = await gallery.weave(base, ids, req.body && req.body.days);
+    // Capture the plan the user built + what our engine kept/dropped (Layer 10).
+    db.capture('weave', req.body && req.body.session, {
+      picks: ids, days: (req.body && req.body.days) || null,
+      kept: (result.days || []).map((d) => ({ region: d.region, date: d.date, stops: d.stops.filter((s) => s.id).map((s) => s.id) })),
+      dropped: (result.dropped || []).map((x) => ({ id: x.id, reason: x.reason })),
+    });
+    res.json(result);
   } catch (err) {
     res.status(502).json({ error: (err && err.message) || 'Could not weave your plan' });
   }
