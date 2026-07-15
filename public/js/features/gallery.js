@@ -9,6 +9,7 @@ const CAPE_TOWN = { lat: -33.9249, lon: 18.4241 };
 let ctx = null;
 let items = [];
 let featured = [];
+let bestToday = null;
 let conditions = null;
 let tripDays = 3;
 const chosen = new Set();
@@ -28,7 +29,8 @@ const CAT = {
   music: { icon: '🎶', label: 'Live Music', tint: '#7c3aed' }, comedy: { icon: '🎤', label: 'Comedy', tint: '#7c3aed' },
   festival: { icon: '🎉', label: 'Festivals', tint: '#d8514e' }, community: { icon: '🏃', label: 'Out & About', tint: '#2aa9d8' },
   film: { icon: '🎬', label: 'Film', tint: '#7c3aed' }, scenic: { icon: '🚗', label: 'Scenic Drives', tint: '#12a8a0' },
-  walk: { icon: '🚶', label: 'Walks', tint: '#2aa9d8' },
+  walk: { icon: '🚶', label: 'Walks', tint: '#2aa9d8' }, attraction: { icon: '📸', label: 'Attractions', tint: '#12a8a0' },
+  family: { icon: '👨‍👩‍👧', label: 'Family', tint: '#e0873a' },
 };
 const catOf = (c) => CAT[c] || { icon: '📍', label: c, tint: '#12a8a0' };
 const CAT_ORDER = ['viewpoint', 'beach', 'wine', 'wildlife', 'hike', 'garden', 'nature', 'scenic', 'walk', 'culture', 'art', 'history', 'food', 'market', 'music', 'comedy', 'film', 'festival', 'community'];
@@ -75,6 +77,24 @@ const rowHtml = (icon, label, list, cls = '') => `
     <div class="galRowHead"><span class="grIco">${icon}</span>${esc(label)}<span class="grCount">${list.length}</span></div>
     <div class="galRail">${list.map(railTile).join('')}</div>
   </section>`;
+// The smart "Today" hero — a reasoned mini-day (like Netflix's pick for tonight).
+function todayHeroHtml() {
+  const t = bestToday; if (!t) return '';
+  const allAdded = t.ids.every((id) => chosen.has(id));
+  const stops = t.stops.map((s, i) => `
+    ${i ? '<div class="thArrow">↓</div>' : ''}
+    <div class="thStop">
+      ${s.image ? `<div class="thImg" style="background-image:url('${esc(s.image)}')"></div>` : '<div class="thImg thTile">📍</div>'}
+      <div class="thBody"><span class="tht">${esc(s.time)}${s.km ? ` · ${s.km} km` : ''}</span><b>${esc(s.name)}</b><div class="thWhy">${esc(s.why)}</div></div>
+    </div>`).join('');
+  return `
+    <section class="todayHero">
+      <div class="thTop"><span class="thTag">✨ OneDay picks</span><div class="thHead">${esc(t.headline)}</div><div class="thSub">${esc(t.sub)}</div></div>
+      <div class="thChain">${stops}</div>
+      <button class="thAdd${allAdded ? ' on' : ''}" data-today type="button">${allAdded ? '✓ Added to your plan' : '+ Add this day to my plan'}</button>
+    </section>`;
+}
+
 const stubRow = (icon, label, text) => `
   <section class="galRow stubRow">
     <div class="galRowHead"><span class="grIco">${icon}</span>${esc(label)}<span class="grSoon">soon</span></div>
@@ -97,12 +117,13 @@ function renderRows() {
     $('galRows').innerHTML = rowsFrom(groups, REGION_ORDER, (k) => REGION[k] || { label: k, icon: '📍' }) || '<div class="wLoading">All added — weave your plan below.</div>';
     return;
   }
-  // By vibe: Today's suggestions → editorial buckets → what's on → honest stubs.
+  // By vibe: smart Today plan → Today's suggestions → editorial buckets → what's on.
   const places = avail(items.filter((i) => i.kind === 'place'));
   const events = avail(items.filter((i) => i.kind === 'event'));
   const rows = [];
+  rows.push(todayHeroHtml());
   const feat = avail(featured);
-  if (feat.length) rows.push(rowHtml('✨', 'Today’s suggestions', feat, ' featured'));
+  if (feat.length) rows.push(rowHtml('✨', 'More for today', feat, ' featured'));
   VIBE_BUCKETS.forEach(([k, ic, lb]) => { const list = places.filter((p) => (p.buckets || []).includes(k)); if (list.length) rows.push(rowHtml(ic, lb, list)); });
   if (events.length) rows.push(rowHtml('🎟️', 'What’s on this week', events));
   rows.push(stubRow('🧭', 'Off the beaten track', 'Hidden gems & lesser-known spots — coming with the local place harvest.'));
@@ -152,6 +173,7 @@ export async function loadGallery(next) {
     const g = await api(`/api/gallery?${q}`);
     items = g.items || [];
     featured = g.featured || [];
+    bestToday = g.bestToday || null;
     conditions = g.conditions || null;
     byId.clear(); items.forEach((it) => byId.set(it.id, it));
     capture('gallery_shown', { items: items.length, featured: (featured || []).map((f) => f.id), conditions });
@@ -335,9 +357,14 @@ export function mountGallery() {
   });
   // Add from a rail card.
   $('galRows')?.addEventListener('click', (e) => {
+    if (e.target.closest('[data-today]') && bestToday) {
+      bestToday.ids.forEach((id) => setChosen(id, true));
+      capture('today_plan_added', { ids: bestToday.ids });
+      renderRows();
+      return;
+    }
     const card = e.target.closest('.rCard'); if (!card) return;
-    const id = card.dataset.id;
-    setChosen(id, !chosen.has(id));
+    setChosen(card.dataset.id, !chosen.has(card.dataset.id));
   });
   // Remove from the bottom carousel.
   $('ptRail')?.addEventListener('click', (e) => {

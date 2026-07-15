@@ -17,26 +17,30 @@ const BBOX = '-34.40,18.30,-33.80,19.05';
 
 // Which OSM tags we ingest, and how each maps into our schema. Each rule sets a
 // category + physical sensitivity profile that the decision engine already speaks.
-// sens: [outdoor, wind, rain, cloud, tideMatters, best]
+// sens: [outdoor, wind, rain, cloud, tideMatters, best]. High-signal VISITOR categories
+// only — we skip the noisy/huge ones (every restaurant/cafe/bar, generic historic) which
+// add volume but little value without ratings. Curated data covers food already.
 const RULES = [
-  ['tourism=viewpoint',        'viewpoint', [true, 0.6, 0.7, 0.9, 0, 'any']],
   ['tourism=attraction',       'attraction',[true, 0.4, 0.6, 0.4, 0, 'any']],
-  ['tourism=museum',           'museum',    [false,0.0, 0.0, 0.0, 0, 'any']],
+  ['tourism=viewpoint',        'viewpoint', [true, 0.6, 0.7, 0.9, 0, 'any']],
+  ['tourism=museum',           'culture',   [false,0.0, 0.0, 0.0, 0, 'any']],
   ['tourism=gallery',          'art',       [false,0.0, 0.0, 0.0, 0, 'any']],
   ['tourism=zoo',              'wildlife',  [true, 0.2, 0.5, 0.1, 0, 'morning']],
   ['tourism=theme_park',       'family',    [true, 0.3, 0.6, 0.2, 0, 'any']],
+  ['tourism=artwork',          'art',       [true, 0.2, 0.4, 0.1, 0, 'any']],
   ['natural=beach',            'beach',     [true, 0.8, 0.7, 0.3, 1, 'afternoon']],
   ['natural=peak',             'hike',      [true, 0.8, 0.8, 0.9, 0, 'morning']],
   ['leisure=park',             'garden',    [true, 0.2, 0.6, 0.1, 0, 'any']],
   ['leisure=garden',           'garden',    [true, 0.2, 0.6, 0.1, 0, 'morning']],
   ['leisure=nature_reserve',   'nature',    [true, 0.5, 0.7, 0.5, 0, 'morning']],
-  ['historic=*',               'history',   [true, 0.2, 0.4, 0.2, 0, 'any']],
-  ['amenity=restaurant',       'food',      [false,0.0, 0.1, 0.0, 0, 'evening']],
-  ['amenity=cafe',             'cafe',      [false,0.0, 0.1, 0.0, 0, 'morning']],
-  ['amenity=bar',              'nightlife', [false,0.0, 0.1, 0.0, 0, 'evening']],
   ['amenity=winery',           'wine',      [true, 0.2, 0.4, 0.1, 0, 'afternoon']],
   ['craft=winery',             'wine',      [true, 0.2, 0.4, 0.1, 0, 'afternoon']],
+  ['historic=castle',          'history',   [true, 0.2, 0.4, 0.2, 0, 'any']],
+  ['historic=monument',        'history',   [true, 0.2, 0.4, 0.2, 0, 'any']],
 ];
+// Scenic/quality prior per category (a rough popularity proxy until real ratings).
+const SCENIC = { viewpoint: 0.8, beach: 0.75, hike: 0.75, wine: 0.7, nature: 0.7, wildlife: 0.7, garden: 0.65, attraction: 0.6, art: 0.55, culture: 0.55, family: 0.55, history: 0.55 };
+const REGION_DISPLAY = { city: 'City Bowl', atlantic: 'Atlantic Seaboard', falsebay: 'False Bay', peninsula: 'Cape Peninsula', constantia: 'Constantia', winelands: 'Winelands' };
 
 // Rough sub-region assignment by coordinate box (so places land in the right day
 // cluster — the same real geography the itinerary uses).
@@ -110,17 +114,30 @@ function normalise(el) {
     if (t[k] != null && (v === '*' || t[k] === v)) { cat = category; sens = profile; break; }
   }
   const [outdoor, wind, rain, cloud, tide, best] = sens;
-  // A place literally named for sunset/sundowner is a sunset spot.
   const isSunset = /sunset|sundowner/i.test(t.name) || (cat === 'viewpoint' && lon < 18.42);
+  const region = regionOf(lat, lon);
+  const website = t.website || t['contact:website'] || null;
+  const wikidata = t.wikidata || null;
+  // Popularity proxy: category prior, nudged up if OSM has a Wikidata link or website.
+  let scenic = SCENIC[cat] || 0.5;
+  if (wikidata) scenic += 0.15;
+  if (website) scenic += 0.05;
+  scenic = Math.min(0.98, scenic);
   return {
-    id: slug(t.name) + '-' + String(el.id).slice(-4),
-    name: t.name, category, area: regionOf(lat, lon), lat: +lat.toFixed(5), lon: +lon.toFixed(5),
+    id: 'osm-' + slug(t.name) + '-' + String(el.id).slice(-4),
+    name: t.name, category, region, area: REGION_DISPLAY[region] || region,
+    lat: +lat.toFixed(5), lon: +lon.toFixed(5),
     outdoor, wind, rain, cloud, tideMatters: !!tide, best: isSunset ? 'sunset' : best,
-    website: t.website || t['contact:website'] || null,
-    wikidata: t.wikidata || null,
-    openingHours: t.opening_hours || null,
-    source: 'osm', osmId: el.id,
+    scenic: +scenic.toFixed(2), blurb: '', website, wikidata,
+    openingHours: t.opening_hours || null, source: 'osm', osmId: el.id,
   };
+}
+
+// Keep quality places: named, and either a scenic category or backed by Wikidata/website.
+const JUNK = /^(bench|toilet|parking|atm|bus|taxi|viewpoint$)/i;
+function isQuality(p) {
+  if (!p.name || p.name.length < 3 || JUNK.test(p.name)) return false;
+  return p.scenic >= 0.6 || p.wikidata || p.website;
 }
 
 // Split the rules into small batches so each Overpass request stays light.
@@ -147,17 +164,18 @@ async function main() {
   const places = [];
   for (const el of raw) {
     const p = normalise(el);
-    if (!p) continue;
-    const dedupe = p.name + '|' + p.area;
+    if (!p || !isQuality(p)) continue;
+    const dedupe = p.name.toLowerCase() + '|' + p.region;
     if (seen.has(dedupe)) continue; // drop node+way duplicates of the same place
     seen.add(dedupe);
     places.push(p);
   }
-  const out = path.join(__dirname, '..', 'data', 'places.osm.json');
+  places.sort((a, b) => b.scenic - a.scenic);
+  const out = path.join(__dirname, '..', 'data', 'places-osm.json');
   fs.writeFileSync(out, JSON.stringify(places, null, 0));
   // Report
   const byCat = {}, byRegion = {};
-  places.forEach((p) => { byCat[p.category] = (byCat[p.category] || 0) + 1; byRegion[p.area] = (byRegion[p.area] || 0) + 1; });
+  places.forEach((p) => { byCat[p.category] = (byCat[p.category] || 0) + 1; byRegion[p.region] = (byRegion[p.region] || 0) + 1; });
   console.log(`\nHarvested ${raw.length} raw → ${places.length} named, de-duped places → ${path.relative(process.cwd(), out)}`);
   console.log('By category:', JSON.stringify(byCat));
   console.log('By region:  ', JSON.stringify(byRegion));

@@ -10,7 +10,9 @@
 const weather = require('./weather');
 const tides = require('./tides');
 const events = require('../data/events');
-const { attractions, byId } = require('../data/attractions');
+const placesLib = require('../data/places');
+const attractions = placesLib.all;      // curated (rich) + OSM (breadth)
+const byId = placesLib.byId;
 const { detailsFor } = require('../data/details');
 const restaurants = require('../data/restaurants');
 const { distanceKm } = require('../lib/geo');
@@ -86,6 +88,46 @@ function whyForPlace(a, day, allDays) {
   return `Best on ${day.label.split(',')[0]} — the driest, clearest of the week for it.`;
 }
 
+// The smart "Today" — an actively-reasoned mini-day. Picks a hero for today's
+// conditions, then CHAINS nearby places by tide × proximity × time-of-day, with a
+// why that quotes the real data ("low tide 14:00 makes this better; it's 3 km on").
+function bestTodayPlan(days) {
+  const today = days[0];
+  const tideInfo = tides.forDate(today.date);
+  const lows = (tideInfo.lows || []).filter((l) => l.hour >= 7 && l.hour <= 18);
+  const lowStr = lows.length ? lows[0].hhmm : null;
+  const calm = (today.windKmh || 0) <= 16;
+  const scored = placesLib.curated.map((a) => ({ a, s: scorePlaceDay(a, today) + (a.scenic || 0) * 25 })).sort((x, y) => y.s - x.s);
+  // Hero: a strong morning-ish outdoor pick that actually HAS nearby company.
+  const heroCand = scored.filter((r) => ['morning', 'sunrise', 'any'].includes(r.a.best) && r.a.outdoor).map((r) => r.a);
+  const hero = heroCand.find((h) => placesLib.curated.some((a) => a.id !== h.id && distanceKm(h, a) <= 12)) || heroCand[0] || scored[0].a;
+  // Nearest curated places to the hero, best-scoring first among the close ones.
+  const byNear = placesLib.curated.filter((a) => a.id !== hero.id).sort((a, b) => distanceKm(hero, a) - distanceKm(hero, b));
+  const pool = byNear.filter((a) => distanceKm(hero, a) <= 15);
+  const use = pool.length >= 2 ? pool : byNear.slice(0, 5);
+  const afternoon = use.find((a) => a.tideMatters && ['afternoon', 'any'].includes(a.best))
+    || use.find((a) => ['afternoon', 'any', 'morning'].includes(a.best)) || use[0];
+  const sunset = use.find((a) => a.best === 'sunset' && a !== afternoon)
+    || use.find((a) => a !== afternoon);
+  const chain = [hero, afternoon, sunset].filter((a, i, arr) => a && arr.indexOf(a) === i);
+  if (chain.length < 2) return null;
+
+  const stops = chain.map((a, i) => {
+    const km = i === 0 ? 0 : Math.round(distanceKm(hero, a));
+    let why;
+    if (i === 0) why = calm ? `Start here while it's calm and clear (${today.hi}°, wind ${today.windKmh} km/h) — mornings are best for it.` : `Kick the day off here.`;
+    else if (a.tideMatters && lowStr) why = `Low tide at ${lowStr} makes this better today — and it's only ${km} km from ${hero.name}.`;
+    else if (a.best === 'sunset') why = `End with sunset here, ${km} km on — timed for golden hour.`;
+    else why = `Just ${km} km on, and it flows straight from ${hero.name}.`;
+    return { id: a.id, name: a.name, time: i === 0 ? '09:00' : a.best === 'sunset' ? '17:30' : '13:30', why, image: IMAGES[a.id] || null, km };
+  });
+  return {
+    headline: calm ? `Today's calm and clear — here's your perfect day` : `Here's the best shape for today`,
+    sub: `${today.hi}° · wind ${today.windKmh} km/h${lowStr ? ` · low tide ${lowStr}` : ''}`,
+    ids: chain.map((a) => a.id), stops,
+  };
+}
+
 async function build(base) {
   const days = await sevenDays(base);
   if (!days.length) return { days: [], items: [], featured: [] };
@@ -96,7 +138,7 @@ async function build(base) {
     const scored = days.map((d, i) => ({ i, s: scorePlaceDay(a, d) })).sort((x, y) => y.s - x.s);
     const best = scored[0]; const bd = days[best.i];
     const det = detailsFor(a.id);
-    const region = AREA_TO_REGION[a.area] || 'city';
+    const region = a.region || AREA_TO_REGION[a.area] || 'city';
     return {
       id: a.id, kind: 'place', title: a.name, category: a.category, area: a.area,
       region, regionName: REGION_NAME[region] || a.area, lat: a.lat, lon: a.lon,
@@ -131,7 +173,7 @@ async function build(base) {
     if (seasonCats.has(a.category)) return `In season right now — one to catch while you can.`;
     return `A solid choice for today — ${today.hi}° and wind ${today.windKmh} km/h.`;
   };
-  const rankedToday = attractions
+  const rankedToday = placesLib.curated
     .map((a) => ({ a, s: scorePlaceDay(a, today) + (a.scenic || 0) * 28 + (seasonCats.has(a.category) ? 12 : 0) }))
     .sort((x, y) => y.s - x.s);
   const catCount = {}; const todayPlaces = [];
@@ -152,6 +194,7 @@ async function build(base) {
     location: base,
     days: days.map((d) => ({ date: d.date, label: d.label, weekday: d.weekday, hi: d.hi, windKmh: d.windKmh })),
     conditions: todayConditions(days, base),
+    bestToday: bestTodayPlan(days),
     featured, items: [...places, ...eventItems],
   };
 }
@@ -183,7 +226,7 @@ async function weave(base, ids, nDays) {
 
   // 1) Group picks by region; rank each region by weather-fit + scenery.
   const groups = {};
-  chosen.forEach((a) => { const r = AREA_TO_REGION[a.area] || 'city'; (groups[r] = groups[r] || []).push(a); });
+  chosen.forEach((a) => { const r = a.region || AREA_TO_REGION[a.area] || 'city'; (groups[r] = groups[r] || []).push(a); });
   const regionInfo = Object.entries(groups).map(([region, places]) => {
     let bestI = 0, bestScore = -1e9;
     days.forEach((d, i) => { const sc = places.reduce((s, a) => s + scorePlaceDay(a, d), 0) / places.length; if (sc > bestScore) { bestScore = sc; bestI = i; } });
@@ -226,7 +269,7 @@ async function weave(base, ids, nDays) {
     // Nearby gem: nearest place in the same area they didn't pick.
     const anchor = capped[0];
     const nearby = attractions
-      .filter((a) => (AREA_TO_REGION[a.area] || 'city') === k.region && !chosenIds.has(a.id))
+      .filter((a) => (a.region || AREA_TO_REGION[a.area] || 'city') === k.region && !chosenIds.has(a.id))
       .map((a) => ({ a, d: distanceKm(anchor, a) }))
       .sort((x, y) => x.d - y.d)[0];
     return {

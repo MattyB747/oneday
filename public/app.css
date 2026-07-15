@@ -409,3 +409,19 @@ button{font-family:inherit;cursor:pointer}
 .imgPin.sel{width:20px;height:20px;background:#12a8a0;border-width:3px;z-index:3;box-shadow:0 3px 10px rgba(0,0,0,.4)}
 .ipLbl{position:absolute;left:26px;top:50%;transform:translateY(-50%);white-space:nowrap;background:#fff;color:#0f2430;font-size:12px;font-weight:800;padding:3px 8px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .imgPin.lbl-left .ipLbl{left:auto;right:26px}
+
+/* ===== Smart "Today" hero (reasoned mini-day) ===== */
+.todayHero{margin:6px 20px 22px;background:linear-gradient(135deg,#0f2430,#123b3a);color:#fff;border-radius:20px;padding:18px 18px 16px;box-shadow:0 10px 30px rgba(15,36,48,.22)}
+.thTag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:rgba(255,255,255,.16);color:#7fe9e0;padding:4px 10px;border-radius:999px}
+.thHead{font-size:21px;font-weight:800;letter-spacing:-.3px;margin:10px 0 3px}
+.thSub{font-size:13px;color:#a9c6c3;font-weight:600}
+.thChain{margin:14px 0 4px;display:flex;flex-direction:column;gap:0}
+.thStop{display:flex;gap:12px;align-items:center}
+.thImg{flex:0 0 56px;height:56px;border-radius:12px;background-size:cover;background-position:center;background-color:#1e4f4c;display:flex;align-items:center;justify-content:center;font-size:22px}
+.thBody{min-width:0}
+.thBody .tht{font-size:11px;font-weight:800;color:#7fe9e0;letter-spacing:.03em}
+.thBody b{display:block;font-size:16px;font-weight:800;line-height:1.2}
+.thWhy{font-size:12.5px;color:#c7dcd9;line-height:1.35;margin-top:2px}
+.thArrow{color:#4d6d6a;font-size:15px;margin:3px 0 3px 26px}
+.thAdd{margin-top:14px;width:100%;background:#12a8a0;color:#fff;border:0;border-radius:14px;padding:14px;font-weight:800;font-size:15px;cursor:pointer}
+.thAdd.on{background:rgba(255,255,255,.16)}
