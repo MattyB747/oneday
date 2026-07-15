@@ -170,31 +170,75 @@ async function weave() {
   finally { $('weaveBtn').disabled = false; $('weaveBtn').textContent = 'Weave my plan →'; }
 }
 
-const stopHtml = (s) => `
+const DAY_COLORS = ['#12a8a0', '#e0873a', '#7c3aed', '#d8514e', '#2aa9d8', '#3f9d4f', '#c0497b'];
+
+const stopHtml = (s, n, color) => `
   <div class="dStop">
+    <span class="dNum" style="background:${color}">${n}</span>
     <span class="dt">${esc(s.time)}</span>
     <div class="dStopBody">
       <b>${esc(s.name)}</b>${s.area ? ` <small>${esc(s.area)}</small>` : ''}${s.meal ? '<span class="dMeal">🍴 lunch</span>' : ''}
       ${s.why ? `<div class="dw">${esc(s.why)}</div>` : ''}
+      ${s.wear ? `<div class="dWear">👕 ${esc(s.wear)}</div>` : ''}
+      ${s.about ? `<div class="dAbout">📖 ${esc(s.about)}</div>` : ''}
       ${s.cost ? `<span class="dc">${esc(s.cost)}</span>` : ''}
     </div>
   </div>`;
 
+// Build a Google Maps directions URL from a day's stops (opens the app on device).
+function gmapsUrl(stops) {
+  const pts = stops.filter((s) => s.lat && s.lon).map((s) => `${s.lat},${s.lon}`);
+  if (!pts.length) return null;
+  const dest = pts[pts.length - 1];
+  const waypoints = pts.slice(0, -1).join('|');
+  return `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(dest)}${waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : ''}`;
+}
+
+// Illustrated plan map: day-coloured, numbered markers for every stop.
+function renderPlanMap(days) {
+  const allStops = [];
+  days.forEach((d, di) => d.stops.filter((s) => s.lat && s.lon).forEach((s, si) => allStops.push({ s, di, n: si + 1 })));
+  if (!allStops.length) { $('planMapWrap').innerHTML = ''; return; }
+  const pins = allStops.map(({ s, di, n }) => {
+    const [x, y] = projectXY(s.lat, s.lon); const color = DAY_COLORS[di % DAY_COLORS.length];
+    return `<g transform="translate(${x},${y})"><circle r="11" fill="${color}" stroke="#fff" stroke-width="2.5"/><text y="4" text-anchor="middle" class="pmNum">${n}</text></g>`;
+  }).join('');
+  const legend = days.map((d, di) => `<span class="pmLeg"><i style="background:${DAY_COLORS[di % DAY_COLORS.length]}"></i>${esc(d.label.split(',')[0])} · ${esc(d.region)}</span>`).join('');
+  $('planMapWrap').innerHTML = `
+    <div class="planMap">
+      <svg class="artSvg" viewBox="0 0 ${AW} ${AH}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="sea2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe3ef"/><stop offset="1" stop-color="#7fc2d9"/></linearGradient>
+          <linearGradient id="land2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9ddc4"/><stop offset="1" stop-color="#d8cba9"/></linearGradient></defs>
+        <rect width="${AW}" height="${AH}" fill="url(#sea2)"/>
+        <path d="M0,0 L400,0 L400,150 C360,168 300,150 262,168 C250,240 244,320 232,398 C222,470 210,520 182,552 C168,566 150,560 146,532 C132,452 120,352 116,262 C112,206 92,168 44,156 C24,151 8,150 0,146 Z" fill="url(#land2)" stroke="#c9b98f" stroke-width="2"/>
+        <path d="M120,150 L100,120 Q140,108 178,122 L162,150 Z" fill="#b7a878" opacity="0.9"/>
+        <text x="40" y="300" class="artSea">ATLANTIC</text><text x="300" y="430" class="artSea">FALSE BAY</text>
+        ${pins}
+      </svg>
+    </div>
+    <div class="pmLegend">${legend}</div>`;
+}
+
 function renderWoven(res) {
   const days = (res && res.days) || [];
   const dropped = (res && res.dropped) || [];
-  if (!days.length) { $('wovenDays').innerHTML = '<div class="wLoading">Add some places first.</div>'; return; }
+  if (!days.length) { $('wovenDays').innerHTML = '<div class="wLoading">Add some places first.</div>'; $('planMapWrap').innerHTML = ''; return; }
+  renderPlanMap(days);
   const banner = dropped.length ? `
     <div class="dropBanner">
       <div class="dropHead">⚠︎ ${dropped.length} pick${dropped.length > 1 ? 's' : ''} didn’t fit your ${tripDays}-day trip — here’s why:</div>
       ${dropped.map((d) => `<div class="dropItem"><b>${esc(d.title)}</b> <span>${esc(d.reason)}</span></div>`).join('')}
       <div class="dropTip">Add a day, or drop something else — then weave again.</div>
     </div>` : '';
-  $('wovenDays').innerHTML = banner + days.map((d) => `
-    <div class="wvDay">
-      <div class="wvHead"><div class="wvDate">${esc(d.label)}</div><div class="wvRegion">${esc(d.region)}</div></div>
+  $('wovenDays').innerHTML = banner + days.map((d, di) => {
+    const color = DAY_COLORS[di % DAY_COLORS.length];
+    const g = gmapsUrl(d.stops);
+    return `
+    <div class="wvDay" style="border-top:4px solid ${color}">
+      <div class="wvHead"><div class="wvDate"><span class="wvDot" style="background:${color}"></span>${esc(d.label)}</div><div class="wvRegion">${esc(d.region)}</div></div>
       <div class="wvWhy">💡 ${esc(d.why)}</div>
-      <div class="dPlan">${d.stops.map(stopHtml).join('')}</div>
+      <div class="dPlan">${d.stops.map((s, i) => stopHtml(s, i + 1, color)).join('')}</div>
+      ${g ? `<a class="gmapsBtn" href="${g}" target="_blank" rel="noopener">🧭 Open this day’s route in Google Maps</a>` : ''}
       ${d.traffic ? `<div class="wvTraffic">🚗 ${esc(d.traffic)}</div>` : ''}
       ${d.nearby ? `
         <div class="wvNearby">
@@ -202,7 +246,7 @@ function renderWoven(res) {
           <div class="nbBody"><div class="nbLbl">You’re right here — also worth it${d.nearby.km != null ? ` (${d.nearby.km} km)` : ''}</div><b>${esc(d.nearby.name)}</b><div class="nbWhy">${esc(d.nearby.why)}</div></div>
           <button class="nbAdd" data-id="${esc(d.nearby.id)}" type="button">+ Add</button>
         </div>` : ''}
-    </div>`).join('');
+    </div>`; }).join('');
 }
 
 // ----- Illustrated Cape Town map with live conditions overlaid -----

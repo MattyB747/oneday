@@ -16,6 +16,8 @@ const restaurants = require('../data/restaurants');
 const { distanceKm } = require('../lib/geo');
 let IMAGES = {};
 try { IMAGES = require('../data/images.json'); } catch (_) { IMAGES = {}; }
+let ABOUT = {};
+try { ABOUT = require('../data/about.json'); } catch (_) { ABOUT = {}; }
 
 const clamp = (n) => Math.max(0, Math.min(1, n));
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -212,8 +214,14 @@ async function weave(base, ids, nDays) {
     ordered.slice(4).forEach((a) => dropped.push({ id: a.id, title: a.name, area: REGION_NAME[k.region], reason: `only so much fits in a day — this ranked lowest of your ${REGION_NAME[k.region]} picks.` }));
     const stops = [];
     capped.forEach((a, idx) => {
-      if (idx === 2) { const l = restaurants.byRegion(k.region, 'lunch')[0]; if (l) stops.push({ time: '12:30', name: l.name, area: l.cuisine, meal: true, cost: l.priceText, why: `Lunch in ${REGION_NAME[k.region]} — right by your stops.` }); }
-      stops.push({ time: ACT_CLOCK[Math.min(stops.filter((s) => !s.meal).length, ACT_CLOCK.length - 1)], id: a.id, name: a.name, area: a.area, why: whyForPlace(a, day, days), cost: (detailsFor(a.id).cost) || null, image: IMAGES[a.id] || null });
+      if (idx === 2) { const l = restaurants.byRegion(k.region, 'lunch')[0]; if (l) stops.push({ time: '12:30', name: l.name, area: l.cuisine, meal: true, cost: l.priceText, lat: l.lat, lon: l.lon, why: `Lunch in ${REGION_NAME[k.region]} — right by your stops.` }); }
+      const det = detailsFor(a.id);
+      stops.push({
+        time: ACT_CLOCK[Math.min(stops.filter((s) => !s.meal).length, ACT_CLOCK.length - 1)],
+        id: a.id, name: a.name, area: a.area, lat: a.lat, lon: a.lon,
+        why: whyForPlace(a, day, days), cost: det.cost || null, wear: det.wear || null, about: ABOUT[a.id] || null,
+        image: IMAGES[a.id] || null,
+      });
     });
     // Nearby gem: nearest place in the same area they didn't pick.
     const anchor = capped[0];
@@ -225,7 +233,7 @@ async function weave(base, ids, nDays) {
       date: day.date, dayIndex: k.di, label: day.label, region: REGION_NAME[k.region], hi: day.hi, windKmh: day.windKmh,
       why: `${REGION_NAME[k.region]} on ${day.label.split(',')[0]} — ${day.windKmh <= 15 ? 'calm and clear' : 'the best-matched day'} for your picks here.`,
       traffic: COMMUTE[k.region] || null,
-      nearby: nearby ? { id: nearby.a.id, name: nearby.a.name, km: Math.round(nearby.d), why: nearby.a.blurb, image: IMAGES[nearby.a.id] || null, cost: (detailsFor(nearby.a.id).cost) || null } : null,
+      nearby: nearby ? { id: nearby.a.id, name: nearby.a.name, lat: nearby.a.lat, lon: nearby.a.lon, km: Math.round(nearby.d), why: nearby.a.blurb, about: ABOUT[nearby.a.id] || null, image: IMAGES[nearby.a.id] || null, cost: (detailsFor(nearby.a.id).cost) || null } : null,
       stops,
     };
   });
