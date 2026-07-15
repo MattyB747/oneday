@@ -30,7 +30,6 @@ const RULES = [
   ['tourism=artwork',          'art',       [true, 0.2, 0.4, 0.1, 0, 'any']],
   ['natural=beach',            'beach',     [true, 0.8, 0.7, 0.3, 1, 'afternoon']],
   ['natural=peak',             'hike',      [true, 0.8, 0.8, 0.9, 0, 'morning']],
-  ['leisure=park',             'garden',    [true, 0.2, 0.6, 0.1, 0, 'any']],
   ['leisure=garden',           'garden',    [true, 0.2, 0.6, 0.1, 0, 'morning']],
   ['leisure=nature_reserve',   'nature',    [true, 0.5, 0.7, 0.5, 0, 'morning']],
   ['amenity=winery',           'wine',      [true, 0.2, 0.4, 0.1, 0, 'afternoon']],
@@ -125,7 +124,7 @@ function normalise(el) {
   scenic = Math.min(0.98, scenic);
   return {
     id: 'osm-' + slug(t.name) + '-' + String(el.id).slice(-4),
-    name: t.name, category, region, area: REGION_DISPLAY[region] || region,
+    name: t.name, category: cat, region, area: REGION_DISPLAY[region] || region,
     lat: +lat.toFixed(5), lon: +lon.toFixed(5),
     outdoor, wind, rain, cloud, tideMatters: !!tide, best: isSunset ? 'sunset' : best,
     scenic: +scenic.toFixed(2), blurb: '', website, wikidata,
