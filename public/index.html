@@ -28,8 +28,9 @@
       <div class="brand"><span class="logo">ONE<b>DAY</b> <small>.CAPETOWN</small></span><span class="tag">Everything on. Pick what you like.</span></div>
     </div>
     <div class="galHead">
-      <h1>What’s on in Cape Town.</h1>
-      <p class="tag">The next 7 days. Tap <b>+</b> on anything that appeals — it drops into your plan below. Then we weave your picks together, on the right day and time, and tell you why.</p>
+      <div class="conciergeBar" id="conciergeBar" hidden><span class="greet" id="greet"></span><button class="tuneBtn" id="tuneBtn" type="button">✎ tune</button></div>
+      <h1 id="galTitle">What’s on in Cape Town.</h1>
+      <p class="tag" id="galIntro">The next 7 days. Tap <b>+</b> on anything that appeals — it drops into your plan below. Then we weave your picks together, on the right day and time, and tell you why.</p>
       <div class="galModes">
         <button class="galMode on" data-mode="vibe" type="button">By vibe</button>
         <button class="galMode" data-mode="area" type="button">By area</button>
@@ -129,6 +130,19 @@
       <div class="row"><span>Open-Meteo</span><span>iNaturalist</span><span>Wikipedia</span><span>SANParks</span><span>City of Cape Town</span><span>GetYourGuide</span></div>
     </div>
   </section>
+
+  <!-- Concierge onboarding: learn what you love, make it about you -->
+  <div class="onbOverlay" id="onbOverlay" hidden>
+    <div class="onbCard">
+      <div class="onbBrand"><span class="logo">ONE<b>DAY</b></span> · your Cape Town concierge</div>
+      <h2 id="onbHead">Hi — I’m your Cape Town concierge.</h2>
+      <p>Two seconds and every day I plan is about <b>you</b>.</p>
+      <input class="inp" id="onbName" type="text" placeholder="Your name (optional)" autocomplete="off" maxlength="24" />
+      <div class="onbLbl">What do you love?</div>
+      <div class="onbChips" id="onbChips"></div>
+      <button class="cta" id="onbGo" type="button">Show me my Cape Town →</button>
+    </div>
+  </div>
 
   <div id="toast"></div>
   <script type="module" src="/js/app.js"></script>

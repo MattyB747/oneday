@@ -34,6 +34,22 @@ function seasonCategories() {
   return s;
 }
 
+// Concierge personalisation — how much a place matches what YOU told us you love.
+const LIKE_MATCH = {
+  beaches: (p) => p.category === 'beach' || (p.tags || []).includes('beach'),
+  wine: (p) => p.category === 'wine' || (p.tags || []).includes('wine'),
+  hikes: (p) => ['hike', 'nature'].includes(p.category) || (p.tags || []).some((t) => ['hiking', 'nature', 'adventure'].includes(t)),
+  culture: (p) => ['culture', 'history', 'art'].includes(p.category) || (p.tags || []).some((t) => ['culture', 'history'].includes(t)),
+  views: (p) => p.category === 'viewpoint' || (p.tags || []).some((t) => ['views', 'photography', 'scenic'].includes(t)),
+  food: (p) => ['food', 'market'].includes(p.category) || (p.tags || []).includes('food'),
+  sunsets: (p) => p.best === 'sunset' || (p.tags || []).some((t) => ['romantic', 'sunset'].includes(t)),
+  wildlife: (p) => p.category === 'wildlife' || (p.tags || []).includes('wildlife'),
+  family: (p) => (p.tags || []).includes('family'),
+};
+const LIKE_WORD = { beaches: 'beaches', wine: 'wine', hikes: 'hikes & nature', culture: 'culture', views: 'views & photography', food: 'food', sunsets: 'sunsets', wildlife: 'wildlife', family: 'family days' };
+const affinity = (p, likes) => (likes || []).reduce((n, k) => n + (LIKE_MATCH[k] && LIKE_MATCH[k](p) ? 1 : 0), 0);
+const prettyLikes = (likes) => (likes || []).slice(0, 2).map((k) => LIKE_WORD[k] || k).join(' & ');
+
 // Editorial buckets for a place, derived honestly from its data.
 function editorialBuckets(a, seasonCats) {
   const b = [];
@@ -91,13 +107,13 @@ function whyForPlace(a, day, allDays) {
 // The smart "Today" — an actively-reasoned mini-day. Picks a hero for today's
 // conditions, then CHAINS nearby places by tide × proximity × time-of-day, with a
 // why that quotes the real data ("low tide 14:00 makes this better; it's 3 km on").
-function bestTodayPlan(days) {
+function bestTodayPlan(days, likes) {
   const today = days[0];
   const tideInfo = tides.forDate(today.date);
   const lows = (tideInfo.lows || []).filter((l) => l.hour >= 7 && l.hour <= 18);
   const lowStr = lows.length ? lows[0].hhmm : null;
   const calm = (today.windKmh || 0) <= 16;
-  const scored = placesLib.curated.map((a) => ({ a, s: scorePlaceDay(a, today) + (a.scenic || 0) * 25 })).sort((x, y) => y.s - x.s);
+  const scored = placesLib.curated.map((a) => ({ a, s: scorePlaceDay(a, today) + (a.scenic || 0) * 25 + affinity(a, likes) * 22 })).sort((x, y) => y.s - x.s);
   // Hero: a strong morning-ish outdoor pick that actually HAS nearby company.
   const heroCand = scored.filter((r) => ['morning', 'sunrise', 'any'].includes(r.a.best) && r.a.outdoor).map((r) => r.a);
   const hero = heroCand.find((h) => placesLib.curated.some((a) => a.id !== h.id && distanceKm(h, a) <= 12)) || heroCand[0] || scored[0].a;
@@ -119,16 +135,21 @@ function bestTodayPlan(days) {
     else if (a.tideMatters && lowStr) why = `Low tide at ${lowStr} makes this better today — and it's only ${km} km from ${hero.name}.`;
     else if (a.best === 'sunset') why = `End with sunset here, ${km} km on — timed for golden hour.`;
     else why = `Just ${km} km on, and it flows straight from ${hero.name}.`;
-    return { id: a.id, name: a.name, time: i === 0 ? '09:00' : a.best === 'sunset' ? '17:30' : '13:30', why, image: IMAGES[a.id] || null, km };
+    const clock = ['09:00', '13:00', '16:30'];
+    return { id: a.id, name: a.name, time: a.best === 'sunset' ? '17:30' : clock[Math.min(i, clock.length - 1)], why, image: IMAGES[a.id] || null, km };
   });
+  const headline = (likes && likes.length)
+    ? `Because you love ${prettyLikes(likes)} — here's your day`
+    : (calm ? `Today's calm and clear — here's your perfect day` : `Here's the best shape for today`);
   return {
-    headline: calm ? `Today's calm and clear — here's your perfect day` : `Here's the best shape for today`,
+    headline,
     sub: `${today.hi}° · wind ${today.windKmh} km/h${lowStr ? ` · low tide ${lowStr}` : ''}`,
     ids: chain.map((a) => a.id), stops,
   };
 }
 
-async function build(base) {
+async function build(base, prefs) {
+  const likes = (prefs && prefs.likes) || [];
   const days = await sevenDays(base);
   if (!days.length) return { days: [], items: [], featured: [] };
   const seasonCats = seasonCategories();
@@ -189,12 +210,17 @@ async function build(base) {
     area: e.area, region: e.area, regionName: REGION_NAME[e.area] || e.area, where: e.where, image: null, when: 'On today', why: e.note,
   }));
   const featured = [...todayPlaces, ...todayEvents];
+  const itemById = new Map(places.map((it) => [it.id, it]));
 
   return {
     location: base,
     days: days.map((d) => ({ date: d.date, label: d.label, weekday: d.weekday, hi: d.hi, windKmh: d.windKmh })),
     conditions: todayConditions(days, base),
-    bestToday: bestTodayPlan(days),
+    bestToday: bestTodayPlan(days, likes),
+    forYou: likes.length
+      ? placesLib.all.map((a) => ({ a, s: affinity(a, likes) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 14).map((x) => itemById.get(x.a.id)).filter(Boolean)
+      : [],
+    likesLabel: likes.length ? prettyLikes(likes) : null,
     featured, items: [...places, ...eventItems],
   };
 }

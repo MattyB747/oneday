@@ -9,11 +9,19 @@ const CAPE_TOWN = { lat: -33.9249, lon: 18.4241 };
 let ctx = null;
 let items = [];
 let featured = [];
+let forYou = [];
+let likesLabel = '';
 let bestToday = null;
 let conditions = null;
 let tripDays = 3;
 const chosen = new Set();
 const byId = new Map();
+
+// Concierge preferences — what YOU love. Persisted locally + captured.
+let prefs = { name: '', likes: [] };
+try { const p = JSON.parse(localStorage.getItem('odPrefs') || 'null'); if (p && Array.isArray(p.likes)) prefs = p; } catch (_) {}
+const TASTES = [['beaches', '🏖️ Beaches'], ['wine', '🍷 Wine'], ['hikes', '🥾 Hikes & nature'], ['views', '📸 Views & photos'], ['culture', '🎨 Culture & history'], ['food', '🍽️ Food & markets'], ['sunsets', '🌅 Sunsets'], ['wildlife', '🐧 Wildlife'], ['family', '👨‍👩‍👧 Family']];
+function savePrefs() { try { localStorage.setItem('odPrefs', JSON.stringify(prefs)); } catch (_) {} }
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function show(id) { document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id)); }
@@ -122,6 +130,8 @@ function renderRows() {
   const events = avail(items.filter((i) => i.kind === 'event'));
   const rows = [];
   rows.push(todayHeroHtml());
+  const fy = avail(forYou);
+  if (fy.length) rows.push(rowHtml('💛', `Because you love ${esc(likesLabel)}`, fy, ' featured'));
   const feat = avail(featured);
   if (feat.length) rows.push(rowHtml('✨', 'More for today', feat, ' featured'));
   VIBE_BUCKETS.forEach(([k, ic, lb]) => { const list = places.filter((p) => (p.buckets || []).includes(k)); if (list.length) rows.push(rowHtml(ic, lb, list)); });
@@ -169,14 +179,18 @@ export async function loadGallery(next) {
   ctx = next || ctx || { ...CAPE_TOWN };
   show('week');
   try {
-    const q = ctx.tripId ? `tripId=${encodeURIComponent(ctx.tripId)}` : `lat=${ctx.lat}&lon=${ctx.lon}`;
+    let q = ctx.tripId ? `tripId=${encodeURIComponent(ctx.tripId)}` : `lat=${ctx.lat}&lon=${ctx.lon}`;
+    if (prefs.likes.length) q += `&likes=${prefs.likes.join(',')}`;
     const g = await api(`/api/gallery?${q}`);
     items = g.items || [];
     featured = g.featured || [];
+    forYou = g.forYou || [];
+    likesLabel = g.likesLabel || '';
     bestToday = g.bestToday || null;
     conditions = g.conditions || null;
     byId.clear(); items.forEach((it) => byId.set(it.id, it));
-    capture('gallery_shown', { items: items.length, featured: (featured || []).map((f) => f.id), conditions });
+    setGreeting();
+    capture('gallery_shown', { items: items.length, likes: prefs.likes, conditions });
     renderRows(); renderTray();
   } catch (err) {
     $('galRows').innerHTML = `<div class="wLoading">Couldn’t load what’s on — ${esc(err.message)}</div>`;
@@ -346,7 +360,33 @@ function setMode(m) {
   }
 }
 
+// Concierge greeting + personalised titles.
+function setGreeting() {
+  const bar = $('conciergeBar'); if (!bar) return;
+  if (!prefs.likes.length && !prefs.name) { bar.hidden = true; return; }
+  const h = new Date().getHours();
+  const tod = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  const ic = h < 12 ? '☀️' : h < 18 ? '🌤️' : '🌙';
+  $('greet').textContent = `${tod}${prefs.name ? `, ${prefs.name}` : ''} ${ic}`;
+  bar.hidden = false;
+  const t = $('galTitle'); if (t) t.textContent = prefs.name ? `${prefs.name}’s Cape Town.` : 'Your Cape Town today.';
+  const intro = $('galIntro'); if (intro && likesLabel) intro.innerHTML = `Tuned to your love of <b>${esc(likesLabel)}</b>. Tap <b>+</b> on anything — it drops into your plan, and I weave it into the perfect day.`;
+}
+
+// Onboarding modal.
+function renderOnbChips() { $('onbChips').innerHTML = TASTES.map(([k, l]) => `<button class="onbChip${prefs.likes.includes(k) ? ' on' : ''}" data-k="${k}" type="button">${l}</button>`).join(''); }
+function openOnboarding() { const n = $('onbName'); if (n) n.value = prefs.name || ''; renderOnbChips(); $('onbOverlay').hidden = false; }
+
 export function mountGallery() {
+  // Onboarding wiring.
+  $('onbChips')?.addEventListener('click', (e) => { const b = e.target.closest('.onbChip'); if (!b) return; const k = b.dataset.k; const i = prefs.likes.indexOf(k); if (i >= 0) prefs.likes.splice(i, 1); else prefs.likes.push(k); renderOnbChips(); });
+  $('onbGo')?.addEventListener('click', () => {
+    prefs.name = ($('onbName').value || '').trim();
+    savePrefs(); capture('prefs_set', { name: !!prefs.name, likes: prefs.likes });
+    $('onbOverlay').hidden = true;
+    loadGallery(ctx);
+  });
+  $('tuneBtn')?.addEventListener('click', openOnboarding);
   document.querySelector('.galModes')?.addEventListener('click', (e) => { const b = e.target.closest('.galMode'); if (b) setMode(b.dataset.mode); });
   // Tap a pin on the illustrated map to add/remove it.
   $('mapEl')?.addEventListener('click', (e) => {
@@ -388,4 +428,6 @@ export function mountGallery() {
     if (t && stay) boot = { tripId: t, lat: stay.lat, lon: stay.lon };
   } catch (_) {}
   loadGallery(boot);
+  // First visit → meet the concierge and tell it what you love.
+  if (!prefs.likes.length && !prefs.name) setTimeout(openOnboarding, 400);
 }

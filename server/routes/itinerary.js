@@ -47,7 +47,8 @@ router.get('/api/gallery', async (req, res) => {
   try {
     const base = baseFrom(req);
     if (!base) return res.status(400).json({ error: 'Location required' });
-    res.json(await gallery.build(base));
+    const likes = String(req.query.likes || '').split(',').map((s) => s.trim()).filter(Boolean);
+    res.json(await gallery.build(base, { likes }));
   } catch (err) {
     res.status(502).json({ error: (err && err.message) || 'Could not load what’s on' });
   }
