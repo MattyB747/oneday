@@ -471,3 +471,10 @@ button{font-family:inherit;cursor:pointer}
 .pmLegend{display:flex;flex-wrap:wrap;gap:12px;padding:10px 2px 0}
 .pmLeg{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink2)}
 .pmLeg i{width:12px;height:12px;border-radius:50%;display:inline-block}
+
+/* ✕ dismiss ("not for me / already done it") */
+.rDismiss{position:absolute;top:10px;left:12px;width:26px;height:26px;border-radius:50%;background:rgba(15,36,48,.55);border:0;color:#fff;font-size:13px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px)}
+.rDismiss:hover{background:var(--bad)}
+.thStop{position:relative}
+.thDismiss{position:absolute;top:0;right:0;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.14);border:0;color:#fff;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.thDismiss:hover{background:var(--bad)}

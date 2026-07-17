@@ -18,6 +18,10 @@ let thisWeek = [];
 let tripDays = 3;
 const chosen = new Set();
 const byId = new Map();
+// Dismissed today ("not for me / already done it") — excluded + replaced by next best.
+const dismissed = new Set();
+try { JSON.parse(sessionStorage.getItem('odDismissed') || '[]').forEach((id) => dismissed.add(id)); } catch (_) {}
+function saveDismissed() { try { sessionStorage.setItem('odDismissed', JSON.stringify([...dismissed])); } catch (_) {} }
 
 // Concierge preferences — what YOU love. Persisted locally + captured.
 let prefs = { name: '', likes: [] };
@@ -61,6 +65,7 @@ function railTile(it) {
     <article class="rCard${chosen.has(it.id) ? ' added' : ''}" data-id="${esc(it.id)}">
       ${media}
       <button class="rAdd" type="button" aria-label="Add to plan">${chosen.has(it.id) ? '✓' : '+'}</button>
+      <button class="rDismiss" type="button" data-dismiss="${esc(it.id)}" aria-label="Not for me">✕</button>
       <div class="rInfo">
         <div class="rWhen">🗓️ ${esc(it.when)}</div>
         <h4>${esc(it.title)}</h4>
@@ -96,6 +101,7 @@ function todayHeroHtml() {
     <div class="thStop">
       ${s.image ? `<div class="thImg" style="background-image:url('${esc(s.image)}')"></div>` : '<div class="thImg thTile">📍</div>'}
       <div class="thBody"><span class="tht">${esc(s.time)}${s.km ? ` · ${s.km} km` : ''}</span><b>${esc(s.name)}</b><div class="thWhy">${esc(s.why)}</div></div>
+      <button class="thDismiss" type="button" data-dismiss="${esc(s.id)}" aria-label="Already done / not for me">✕</button>
     </div>`).join('');
   return `
     <section class="todayHero">
@@ -163,6 +169,16 @@ function renderDayPick() {
   el.innerHTML = [2, 3, 4, 5, 6, 7].map((n) => `<button class="ptDay${n === tripDays ? ' on' : ''}" data-n="${n}">${n}</button>`).join('');
 }
 
+// "Not for me / already done it" — exclude and reload so the next-best replaces it.
+function dismiss(id) {
+  if (!id || dismissed.has(id)) return;
+  dismissed.add(id); saveDismissed();
+  const it = byId.get(id);
+  capture('dismissed', { id, name: it && it.name, category: it && it.category });
+  toast(`Swapped out ${it ? it.title || it.name : 'that'} — here's another`);
+  loadGallery(ctx);
+}
+
 function setChosen(id, on) {
   if (on) chosen.add(id); else chosen.delete(id);
   const it = byId.get(id);
@@ -183,6 +199,7 @@ export async function loadGallery(next) {
   try {
     let q = ctx.tripId ? `tripId=${encodeURIComponent(ctx.tripId)}` : `lat=${ctx.lat}&lon=${ctx.lon}`;
     if (prefs.likes.length) q += `&likes=${prefs.likes.join(',')}`;
+    if (dismissed.size) q += `&exclude=${[...dismissed].join(',')}`;
     const g = await api(`/api/gallery?${q}`);
     items = g.items || [];
     featured = g.featured || [];
@@ -362,6 +379,9 @@ export function mountGallery() {
   });
   // Add from a rail card.
   $('galRows')?.addEventListener('click', (e) => {
+    // ✕ dismiss → exclude it and pull in the next-best.
+    const dis = e.target.closest('[data-dismiss]');
+    if (dis) { e.stopPropagation(); dismiss(dis.getAttribute('data-dismiss')); return; }
     if (e.target.closest('[data-today]') && bestToday) {
       bestToday.ids.forEach((id) => setChosen(id, true));
       capture('today_plan_added', { ids: bestToday.ids });

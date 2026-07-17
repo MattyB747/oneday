@@ -107,18 +107,20 @@ function whyForPlace(a, day, allDays) {
 // The smart "Today" — an actively-reasoned mini-day. Picks a hero for today's
 // conditions, then CHAINS nearby places by tide × proximity × time-of-day, with a
 // why that quotes the real data ("low tide 14:00 makes this better; it's 3 km on").
-function bestTodayPlan(days, likes) {
+function bestTodayPlan(days, likes, exclude) {
   const today = days[0];
   const tideInfo = tides.forDate(today.date);
   const lows = (tideInfo.lows || []).filter((l) => l.hour >= 7 && l.hour <= 18);
   const lowStr = lows.length ? lows[0].hhmm : null;
   const calm = (today.windKmh || 0) <= 16;
-  const scored = placesLib.curated.map((a) => ({ a, s: scorePlaceDay(a, today) + (a.scenic || 0) * 25 + affinity(a, likes) * 22 })).sort((x, y) => y.s - x.s);
+  const avail = placesLib.curated.filter((a) => !exclude.has(a.id));
+  const scored = avail.map((a) => ({ a, s: scorePlaceDay(a, today) + (a.scenic || 0) * 25 + affinity(a, likes) * 22 })).sort((x, y) => y.s - x.s);
+  if (!scored.length) return null;
   // Hero: a strong morning-ish outdoor pick that actually HAS nearby company.
   const heroCand = scored.filter((r) => ['morning', 'sunrise', 'any'].includes(r.a.best) && r.a.outdoor).map((r) => r.a);
-  const hero = heroCand.find((h) => placesLib.curated.some((a) => a.id !== h.id && distanceKm(h, a) <= 12)) || heroCand[0] || scored[0].a;
-  // Nearest curated places to the hero, best-scoring first among the close ones.
-  const byNear = placesLib.curated.filter((a) => a.id !== hero.id).sort((a, b) => distanceKm(hero, a) - distanceKm(hero, b));
+  const hero = heroCand.find((h) => avail.some((a) => a.id !== h.id && distanceKm(h, a) <= 12)) || heroCand[0] || scored[0].a;
+  // Nearest available places to the hero, best-scoring first among the close ones.
+  const byNear = avail.filter((a) => a.id !== hero.id).sort((a, b) => distanceKm(hero, a) - distanceKm(hero, b));
   const pool = byNear.filter((a) => distanceKm(hero, a) <= 15);
   const use = pool.length >= 2 ? pool : byNear.slice(0, 5);
   const afternoon = use.find((a) => a.tideMatters && ['afternoon', 'any'].includes(a.best))
@@ -150,12 +152,13 @@ function bestTodayPlan(days, likes) {
 
 async function build(base, prefs) {
   const likes = (prefs && prefs.likes) || [];
+  const exclude = new Set((prefs && prefs.exclude) || []); // dismissed — "not for me today"
   const days = await sevenDays(base);
   if (!days.length) return { days: [], items: [], featured: [] };
   const seasonCats = seasonCategories();
 
   // PLACES — each with best day + why + region + coordinates + editorial buckets.
-  const places = attractions.map((a) => {
+  const places = attractions.filter((a) => !exclude.has(a.id)).map((a) => {
     const scored = days.map((d, i) => ({ i, s: scorePlaceDay(a, d) })).sort((x, y) => y.s - x.s);
     const best = scored[0]; const bd = days[best.i];
     const det = detailsFor(a.id);
@@ -194,7 +197,7 @@ async function build(base, prefs) {
     if (seasonCats.has(a.category)) return `In season right now — one to catch while you can.`;
     return `A solid choice for today — ${today.hi}° and wind ${today.windKmh} km/h.`;
   };
-  const rankedToday = placesLib.curated
+  const rankedToday = placesLib.curated.filter((a) => !exclude.has(a.id))
     .map((a) => ({ a, s: scorePlaceDay(a, today) + (a.scenic || 0) * 28 + (seasonCats.has(a.category) ? 12 : 0) }))
     .sort((x, y) => y.s - x.s);
   const catCount = {}; const todayPlaces = [];
@@ -227,9 +230,9 @@ async function build(base, prefs) {
     days: days.map((d) => ({ date: d.date, label: d.label, weekday: d.weekday, hi: d.hi, windKmh: d.windKmh })),
     conditions: todayConditions(days, base),
     heroImage, thisWeek: thisWeek.slice(0, 5),
-    bestToday: bestTodayPlan(days, likes),
+    bestToday: bestTodayPlan(days, likes, exclude),
     forYou: likes.length
-      ? placesLib.all.map((a) => ({ a, s: affinity(a, likes) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 14).map((x) => itemById.get(x.a.id)).filter(Boolean)
+      ? placesLib.all.filter((a) => !exclude.has(a.id)).map((a) => ({ a, s: affinity(a, likes) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 14).map((x) => itemById.get(x.a.id)).filter(Boolean)
       : [],
     likesLabel: likes.length ? prettyLikes(likes) : null,
     featured, items: [...places, ...eventItems],
