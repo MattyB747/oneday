@@ -212,10 +212,21 @@ async function build(base, prefs) {
   const featured = [...todayPlaces, ...todayEvents];
   const itemById = new Map(places.map((it) => [it.id, it]));
 
+  // "What's on this week" for the hero — marquee events across the 7 days (festivals,
+  // culture, live music, First Thursdays). Sports fixtures come when we wire a feed.
+  const seenEv = new Set(); const thisWeek = [];
+  days.forEach((d) => events.forDate(d.date).forEach((e) => {
+    if (['festival', 'music', 'culture'].includes(e.category) && !seenEv.has(e.name)) {
+      seenEv.add(e.name); thisWeek.push({ name: e.name, where: e.where, day: d.label.split(',')[0], category: e.category });
+    }
+  }));
+  const heroImage = IMAGES['table-mountain'] || IMAGES['camps-bay'] || null;
+
   return {
     location: base,
     days: days.map((d) => ({ date: d.date, label: d.label, weekday: d.weekday, hi: d.hi, windKmh: d.windKmh })),
     conditions: todayConditions(days, base),
+    heroImage, thisWeek: thisWeek.slice(0, 5),
     bestToday: bestTodayPlan(days, likes),
     forYou: likes.length
       ? placesLib.all.map((a) => ({ a, s: affinity(a, likes) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s).slice(0, 14).map((x) => itemById.get(x.a.id)).filter(Boolean)

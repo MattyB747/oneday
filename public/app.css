@@ -443,3 +443,21 @@ button{font-family:inherit;cursor:pointer}
 .onbChips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
 .onbChip{background:var(--bg);border:1.5px solid var(--line);border-radius:999px;padding:9px 14px;font-size:14px;font-weight:700;color:var(--ink2);cursor:pointer}
 .onbChip.on{background:#e3f5f3;border-color:var(--teal);color:var(--teal-d)}
+
+/* ===== Immersive hero (image + fixed conditions + what's on) ===== */
+.heroTop{position:relative;min-height:330px;background:#123 center/cover no-repeat;display:flex;align-items:flex-end}
+.heroScrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,36,48,.25) 0%,rgba(15,36,48,.4) 45%,rgba(15,36,48,.88) 100%)}
+.heroInner{position:relative;width:100%;max-width:1200px;margin:0 auto;padding:16px 20px 18px;display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"now conds" "title title";gap:10px;align-items:start;min-height:330px}
+.heroNow{grid-area:now;align-self:start}
+.heroConds{grid-area:conds;justify-self:end}
+.heroConds,.heroNow{background:rgba(255,255,255,.13);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:10px 12px;color:#fff;min-width:132px;max-width:210px}
+.heroTitle{grid-area:title;color:#fff;align-self:end}
+.heroGreet{font-size:13px;font-weight:800;color:#8fe9e0;letter-spacing:.02em}
+.heroTitle h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin:2px 0 3px;color:#fff}
+.heroTitle p{font-size:14px;color:#dbe7e6;margin:0}
+.hcTitle,.hnTitle{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.72);margin-bottom:6px}
+.hcRow{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:13px}
+.hcRow span{width:16px;text-align:center}.hcRow b{font-weight:800}.hcRow small{margin-left:auto;font-size:9px;color:rgba(255,255,255,.62);text-transform:uppercase;letter-spacing:.04em}
+.hnRow{padding:3px 0;font-size:12.5px;line-height:1.25}
+.hnRow b{display:block;font-weight:800}.hnRow small{color:rgba(255,255,255,.75)}
+.galHead{padding-top:12px}

@@ -13,6 +13,8 @@ let forYou = [];
 let likesLabel = '';
 let bestToday = null;
 let conditions = null;
+let heroImage = null;
+let thisWeek = [];
 let tripDays = 3;
 const chosen = new Set();
 const byId = new Map();
@@ -188,9 +190,11 @@ export async function loadGallery(next) {
     likesLabel = g.likesLabel || '';
     bestToday = g.bestToday || null;
     conditions = g.conditions || null;
+    heroImage = g.heroImage || null;
+    thisWeek = g.thisWeek || [];
     byId.clear(); items.forEach((it) => byId.set(it.id, it));
-    setGreeting();
-    capture('gallery_shown', { items: items.length, likes: prefs.likes, conditions });
+    renderHero();
+    capture('gallery_shown', { items: items.length, conditions });
     renderRows(); renderTray();
   } catch (err) {
     $('galRows').innerHTML = `<div class="wLoading">Couldn’t load what’s on — ${esc(err.message)}</div>`;
@@ -360,33 +364,30 @@ function setMode(m) {
   }
 }
 
-// Concierge greeting + personalised titles.
-function setGreeting() {
-  const bar = $('conciergeBar'); if (!bar) return;
-  if (!prefs.likes.length && !prefs.name) { bar.hidden = true; return; }
+// The immersive hero: Cape Town image + today's conditions (right) + what's on (left).
+function renderHero() {
+  const hero = $('heroTop'); if (!hero) return;
+  if (heroImage) hero.style.backgroundImage = `url('${heroImage}')`;
   const h = new Date().getHours();
   const tod = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const ic = h < 12 ? '☀️' : h < 18 ? '🌤️' : '🌙';
-  $('greet').textContent = `${tod}${prefs.name ? `, ${prefs.name}` : ''} ${ic}`;
-  bar.hidden = false;
-  const t = $('galTitle'); if (t) t.textContent = prefs.name ? `${prefs.name}’s Cape Town.` : 'Your Cape Town today.';
-  const intro = $('galIntro'); if (intro && likesLabel) intro.innerHTML = `Tuned to your love of <b>${esc(likesLabel)}</b>. Tap <b>+</b> on anything — it drops into your plan, and I weave it into the perfect day.`;
+  const gr = $('heroGreet'); if (gr) gr.textContent = `${tod} ${ic}`;
+  const c = conditions || {};
+  const conds = [
+    ['🌡️', c.tempC != null ? `${c.tempC}°` : '–', 'Today'],
+    ['💨', c.windKmh != null ? `${c.windKmh} km/h` : '–', 'Wind'],
+    ['🌊', c.lowTide ? `Low ${c.lowTide}` : '–', 'Tide'],
+    ['🌅', c.sunset || '–', 'Sunset'],
+  ];
+  const ce = $('heroConds'); if (ce) ce.innerHTML = `<div class="hcTitle">Right now</div>` + conds.map(([i, v, l]) => `<div class="hcRow"><span>${i}</span><b>${esc(v)}</b><small>${l}</small></div>`).join('');
+  const ne = $('heroNow');
+  if (ne) {
+    if (thisWeek.length) { ne.innerHTML = `<div class="hnTitle">📣 On this week</div>` + thisWeek.slice(0, 3).map((e) => `<div class="hnRow"><b>${esc(e.name)}</b><small>${esc(e.day)} · ${esc(e.where)}</small></div>`).join(''); ne.hidden = false; }
+    else ne.hidden = true;
+  }
 }
 
-// Onboarding modal.
-function renderOnbChips() { $('onbChips').innerHTML = TASTES.map(([k, l]) => `<button class="onbChip${prefs.likes.includes(k) ? ' on' : ''}" data-k="${k}" type="button">${l}</button>`).join(''); }
-function openOnboarding() { const n = $('onbName'); if (n) n.value = prefs.name || ''; renderOnbChips(); $('onbOverlay').hidden = false; }
-
 export function mountGallery() {
-  // Onboarding wiring.
-  $('onbChips')?.addEventListener('click', (e) => { const b = e.target.closest('.onbChip'); if (!b) return; const k = b.dataset.k; const i = prefs.likes.indexOf(k); if (i >= 0) prefs.likes.splice(i, 1); else prefs.likes.push(k); renderOnbChips(); });
-  $('onbGo')?.addEventListener('click', () => {
-    prefs.name = ($('onbName').value || '').trim();
-    savePrefs(); capture('prefs_set', { name: !!prefs.name, likes: prefs.likes });
-    $('onbOverlay').hidden = true;
-    loadGallery(ctx);
-  });
-  $('tuneBtn')?.addEventListener('click', openOnboarding);
   document.querySelector('.galModes')?.addEventListener('click', (e) => { const b = e.target.closest('.galMode'); if (b) setMode(b.dataset.mode); });
   // Tap a pin on the illustrated map to add/remove it.
   $('mapEl')?.addEventListener('click', (e) => {
@@ -428,6 +429,4 @@ export function mountGallery() {
     if (t && stay) boot = { tripId: t, lat: stay.lat, lon: stay.lon };
   } catch (_) {}
   loadGallery(boot);
-  // First visit → meet the concierge and tell it what you love.
-  if (!prefs.likes.length && !prefs.name) setTimeout(openOnboarding, 400);
 }
