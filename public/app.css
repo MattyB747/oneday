@@ -461,3 +461,13 @@ button{font-family:inherit;cursor:pointer}
 .hnRow{padding:3px 0;font-size:12.5px;line-height:1.25}
 .hnRow b{display:block;font-weight:800}.hnRow small{color:rgba(255,255,255,.75)}
 .galHead{padding-top:12px}
+
+/* ===== Real maps (Leaflet) — plan + browse ===== */
+#mapEl{height:74vh;min-height:520px;border-radius:18px;overflow:hidden;border:1px solid var(--line)}
+.planMapWrap #planMapEl{height:300px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 4px 16px rgba(15,36,48,.08)}
+.leaflet-container{font-family:var(--font)}
+.planPin{background:none;border:0}
+.planPin span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.pmLegend{display:flex;flex-wrap:wrap;gap:12px;padding:10px 2px 0}
+.pmLeg{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink2)}
+.pmLeg i{width:12px;height:12px;border-radius:50%;display:inline-block}

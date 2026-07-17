@@ -173,7 +173,7 @@ function setChosen(id, on) {
   } else if (mode !== 'map') {
     renderRows(); // removed from the plan → bring it back into the gallery
   }
-  if (mode === 'map') renderArtMap(); // reflect selection on the illustrated map
+  if (mode === 'map') renderBrowseMap(); // reflect selection on the map
   renderTray();
 }
 
@@ -238,29 +238,26 @@ function gmapsUrl(stops) {
   return `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${encodeURIComponent(dest)}${waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : ''}`;
 }
 
-// Illustrated plan map: day-coloured, numbered markers for every stop.
+// Real map of the woven plan: day-coloured, numbered markers on OpenStreetMap.
+let planMap = null;
 function renderPlanMap(days) {
-  const allStops = [];
-  days.forEach((d, di) => d.stops.filter((s) => s.lat && s.lon).forEach((s, si) => allStops.push({ s, di, n: si + 1 })));
-  if (!allStops.length) { $('planMapWrap').innerHTML = ''; return; }
-  const pins = allStops.map(({ s, di, n }) => {
-    const [x, y] = projectXY(s.lat, s.lon); const color = DAY_COLORS[di % DAY_COLORS.length];
-    return `<g transform="translate(${x},${y})"><circle r="11" fill="${color}" stroke="#fff" stroke-width="2.5"/><text y="4" text-anchor="middle" class="pmNum">${n}</text></g>`;
-  }).join('');
-  const legend = days.map((d, di) => `<span class="pmLeg"><i style="background:${DAY_COLORS[di % DAY_COLORS.length]}"></i>${esc(d.label.split(',')[0])} · ${esc(d.region)}</span>`).join('');
-  $('planMapWrap').innerHTML = `
-    <div class="planMap">
-      <svg class="artSvg" viewBox="0 0 ${AW} ${AH}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-        <defs><linearGradient id="sea2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe3ef"/><stop offset="1" stop-color="#7fc2d9"/></linearGradient>
-          <linearGradient id="land2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9ddc4"/><stop offset="1" stop-color="#d8cba9"/></linearGradient></defs>
-        <rect width="${AW}" height="${AH}" fill="url(#sea2)"/>
-        <path d="M0,0 L400,0 L400,150 C360,168 300,150 262,168 C250,240 244,320 232,398 C222,470 210,520 182,552 C168,566 150,560 146,532 C132,452 120,352 116,262 C112,206 92,168 44,156 C24,151 8,150 0,146 Z" fill="url(#land2)" stroke="#c9b98f" stroke-width="2"/>
-        <path d="M120,150 L100,120 Q140,108 178,122 L162,150 Z" fill="#b7a878" opacity="0.9"/>
-        <text x="40" y="300" class="artSea">ATLANTIC</text><text x="300" y="430" class="artSea">FALSE BAY</text>
-        ${pins}
-      </svg>
-    </div>
-    <div class="pmLegend">${legend}</div>`;
+  const wrap = $('planMapWrap');
+  const stops = [];
+  days.forEach((d, di) => d.stops.filter((s) => s.lat && s.lon).forEach((s, si) => stops.push({ s, di, n: si + 1, label: d.label })));
+  if (!stops.length || !window.L) { wrap.innerHTML = ''; return; }
+  if (planMap) { planMap.remove(); planMap = null; }
+  wrap.innerHTML = `<div id="planMapEl"></div><div class="pmLegend">${days.map((d, di) => `<span class="pmLeg"><i style="background:${DAY_COLORS[di % DAY_COLORS.length]}"></i>${esc(d.label.split(',')[0])} · ${esc(d.region)}</span>`).join('')}</div>`;
+  planMap = L.map('planMapEl', { zoomControl: true, scrollWheelZoom: false }).setView([-34.0, 18.45], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 18 }).addTo(planMap);
+  const bounds = [];
+  stops.forEach(({ s, di, n, label }) => {
+    const color = DAY_COLORS[di % DAY_COLORS.length];
+    const icon = L.divIcon({ className: 'planPin', html: `<span style="background:${color}">${n}</span>`, iconSize: [28, 28], iconAnchor: [14, 14] });
+    L.marker([s.lat, s.lon], { icon }).bindPopup(`<b>${esc(s.name)}</b><br><small>${esc(label.split(',')[0])} · ${esc(s.time)}</small>${s.why ? `<br>${esc(s.why)}` : ''}`, { minWidth: 190 }).addTo(planMap);
+    bounds.push([s.lat, s.lon]);
+  });
+  if (bounds.length) planMap.fitBounds(bounds, { padding: [34, 34], maxZoom: 13 });
+  setTimeout(() => planMap && planMap.invalidateSize(), 120);
 }
 
 function renderWoven(res) {
@@ -294,62 +291,29 @@ function renderWoven(res) {
 }
 
 // ----- Illustrated Cape Town map with live conditions overlaid -----
-// Bounding box for the peninsula; lat/lon project linearly onto the art so pins
-// land in the right spot even though the coastline is stylised.
-const ARTBB = { latMax: -33.76, latMin: -34.38, lonMin: 18.27, lonMax: 18.60 };
-const AW = 400, AH = 580, APAD = 14;
-function projectXY(lat, lon) {
-  const x = APAD + (lon - ARTBB.lonMin) / (ARTBB.lonMax - ARTBB.lonMin) * (AW - 2 * APAD);
-  const y = APAD + (ARTBB.latMax - lat) / (ARTBB.latMax - ARTBB.latMin) * (AH - 2 * APAD);
-  return [Math.max(8, Math.min(AW - 8, x)), Math.max(8, Math.min(AH - 8, y))];
+// Browse map — a real OpenStreetMap of everything, tap a pin to add.
+let browseMap = null, browseMarkers = [];
+function mapPopup(it) {
+  const c = catOf(it.category), added = chosen.has(it.id);
+  return `<div class="mapPop">${it.image ? `<div class="mpImg" style="background-image:url('${esc(it.image)}')"></div>` : ''}<div class="mpCat" style="color:${c.tint}">${c.icon} ${esc(c.label)}</div><b>${esc(it.title)}</b>${it.why ? `<div class="mpWhy">${esc(it.why)}</div>` : ''}<button class="mpAdd${added ? ' on' : ''}" data-pin="${esc(it.id)}" type="button">${added ? '✓ Added' : '+ Add to plan'}</button></div>`;
 }
-
-function conditionsHud() {
-  const c = conditions || {};
-  const rows = [
-    ['🌡️', c.tempC != null ? `${c.tempC}°` : '–', 'temp'],
-    ['💨', c.windKmh != null ? `${c.windKmh} km/h` : '–', 'wind'],
-    ['🌧️', c.rainProb != null ? `${c.rainProb}%` : '–', 'rain'],
-    ['🌊', c.lowTide ? `low ${c.lowTide}` : '–', 'tide'],
-    ['🌅', c.sunset || '–', 'sunset'],
-  ];
-  return `<div class="artHud"><div class="artHudTitle">Right now in Cape Town</div>${rows.map(([i, v, l]) => `<div class="ahRow"><span>${i}</span><b>${esc(v)}</b><small>${l}</small></div>`).join('')}</div>`;
-}
-
-// Stylised fallback backdrop (used until the real illustrated basemap image is added).
-function artBackdropSvg() {
-  return `
-    <svg class="artSvg" viewBox="0 0 ${AW} ${AH}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe3ef"/><stop offset="1" stop-color="#7fc2d9"/></linearGradient>
-        <linearGradient id="land" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9ddc4"/><stop offset="1" stop-color="#d8cba9"/></linearGradient>
-      </defs>
-      <rect width="${AW}" height="${AH}" fill="url(#sea)"/>
-      <path d="M0,0 L400,0 L400,150 C360,168 300,150 262,168 C250,240 244,320 232,398 C222,470 210,520 182,552 C168,566 150,560 146,532 C132,452 120,352 116,262 C112,206 92,168 44,156 C24,151 8,150 0,146 Z" fill="url(#land)" stroke="#c9b98f" stroke-width="2"/>
-      <path d="M120,150 L100,120 Q140,108 178,122 L162,150 Z" fill="#b7a878" opacity="0.9"/>
-      <text x="40" y="300" class="artSea">ATLANTIC</text><text x="300" y="430" class="artSea">FALSE BAY</text>
-    </svg>`;
-}
-
-// Map with an illustrated basemap image + HTML pin overlay. Falls back to the
-// stylised SVG until public/img/cape-basemap.jpg is added, then it just appears.
-function renderArtMap() {
-  const places = items.filter((it) => it.kind === 'place' && it.lat && it.lon);
-  const pins = places.map((p) => {
-    const [x, y] = projectXY(p.lat, p.lon); const sel = chosen.has(p.id);
-    const px = (x / AW * 100).toFixed(2), py = (y / AH * 100).toFixed(2);
-    const left = x > AW * 0.55;
-    return `<button class="imgPin${sel ? ' sel' : ''}${left ? ' lbl-left' : ''}" data-pin="${esc(p.id)}" style="left:${px}%;top:${py}%;--pc:${sel ? '#12a8a0' : catOf(p.category).tint}">${sel ? `<span class="ipLbl">${esc(p.title)}</span>` : ''}</button>`;
-  }).join('');
-  $('mapEl').innerHTML = `
-    <div class="artMap noimg">
-      <img class="baseImg" src="/img/cape-basemap.jpg" alt="Illustrated Cape Town map"
-           onload="this.closest('.artMap').classList.remove('noimg')"
-           onerror="this.closest('.artMap').classList.add('noimg')">
-      <div class="svgFallback">${artBackdropSvg()}</div>
-      <div class="pinLayer">${pins}</div>
-      ${conditionsHud()}
-    </div>`;
+function renderBrowseMap() {
+  const wrap = $('mapEl');
+  if (!window.L) { wrap.innerHTML = '<div class="wLoading">Map unavailable.</div>'; return; }
+  if (!browseMap) {
+    browseMap = L.map(wrap, { zoomControl: true, scrollWheelZoom: true }).setView([-34.0, 18.45], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 18 }).addTo(browseMap);
+  }
+  browseMarkers.forEach((m) => m.remove()); browseMarkers = [];
+  items.filter((it) => it.kind === 'place' && it.lat && it.lon).forEach((it) => {
+    const sel = chosen.has(it.id);
+    const m = L.circleMarker([it.lat, it.lon], sel
+      ? { radius: 11, color: '#0e8c85', weight: 3, fillColor: '#12a8a0', fillOpacity: 1 }
+      : { radius: 7, color: '#fff', weight: 2, fillColor: catOf(it.category).tint, fillOpacity: 0.95 })
+      .bindPopup(mapPopup(it), { minWidth: 200 });
+    m.addTo(browseMap); browseMarkers.push(m);
+  });
+  setTimeout(() => browseMap && browseMap.invalidateSize(), 80);
 }
 
 function setMode(m) {
@@ -357,7 +321,7 @@ function setMode(m) {
   document.querySelectorAll('.galMode').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
   if (m === 'map') {
     $('galRows').hidden = true; $('mapWrap').hidden = false;
-    renderArtMap();
+    renderBrowseMap();
   } else {
     $('mapWrap').hidden = true; $('galRows').hidden = false;
     renderRows();
